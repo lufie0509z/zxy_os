@@ -2,7 +2,7 @@ NASM = nasm
 LD = ld
 AR = ar
 
-OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o
+OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o
 
 CFLAGS = -Wall -fno-pie -O -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32
@@ -20,7 +20,8 @@ all: kernel.bin kernel.elf libkernel.a
 	gcc $(CFLAGS) -I./include -c -o main.o   	main.c 		
 	gcc $(CFLAGS) -I./include -c -o interrupt.o kernel/interrupt.c
 	gcc $(CFLAGS) -I./include -c -o init.o      kernel/init.c
-    
+	gcc $(CFLAGS) -I./include -c -o timer.o     device/timer.c
+
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)
 
