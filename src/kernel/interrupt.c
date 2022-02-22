@@ -9,6 +9,9 @@
 # define PIC_S_CTRL 0xa0
 # define PIC_S_DATA 0xa1
 
+#define EFLAGS_IF 0x00000200 // eflags 寄存器中的 if 位为 1 
+#define GET_EFLAGS(EFLAG_VAR) asm volatile("pushfl; popl %0" : "=g" (EFLAG_VAR))
+
 struct gate_desc {
     uint16_t func_offset_low_word;
     uint16_t selector;
@@ -37,7 +40,6 @@ static void general_intr_handler(uint8_t vec_nr) {
         // 伪中断，无需处理
         return;
     }
-
     put_str("int vector: 0x");
     put_int(vec_nr);
     put_char('\n');
@@ -104,21 +106,39 @@ static void idt_desc_init(void) {
 }
 
 static void pic_init(void) {
-    // 初始化主片
-    outb(PIC_M_CTRL, 0x11);
-    outb(PIC_M_DATA, 0x20);
+    // //初始化主片
+    // outb(PIC_M_CTRL, 0x11);
+    // outb(PIC_M_DATA, 0x20);
 
-    outb(PIC_M_DATA, 0x04);
-    outb(PIC_M_DATA, 0x01);
+    // outb(PIC_M_DATA, 0x04);
+    // outb(PIC_M_DATA, 0x01);
 
-    outb(PIC_S_CTRL, 0x11);
-    outb(PIC_S_DATA, 0x28);
+    // outb(PIC_S_CTRL, 0x11);
+    // outb(PIC_S_DATA, 0x28);
 
-    outb(PIC_S_DATA, 0x02);
-    outb(PIC_S_DATA, 0x01);
+    // outb(PIC_S_DATA, 0x02);
+    // outb(PIC_S_DATA, 0x01);
 
-    outb(PIC_M_DATA, 0xfe);
-    outb(PIC_S_DATA, 0xff);
+    // outb(PIC_M_DATA, 0x0);
+    // outb(PIC_S_DATA, 0x0);
+
+    outb(0x20, 0x11);   // Master ICW1, cascade
+    outb(0xA0, 0x11);   // Slave  ICW1  cascade
+
+    outb(0x21, 0x20);   // Master ICW2, set begin interrupt number 32
+    outb(0xA1, 0x28);   // Slave  ICW2, set begin interrupt number 40
+
+    outb(0x21, 0x04);   // Master ICW3, IR2 connect slave
+    outb(0xA1, 0x02);   // Slave  ICW3, connect to master IR2
+
+    outb(0x21, 0x01);   // Master ICW4, 8086 mode, normal EOI
+    outb(0xA1, 0x01);   // Slave  ICW4, 8086 mode, normal EOI
+
+    /* Open all IR */
+    // outb(0x21, 0xfe);
+    // outb(0xA1, 0xff);
+    outb(0x21, 0x0);
+    outb(0xA1, 0x0);
 
     put_str("pic_init done.\n");
 }
@@ -133,4 +153,48 @@ void idt_init() {
     uint64_t idt_operand = ((sizeof(idt) - 1) | ((uint64_t) ((uint32_t) idt << 16)));
     asm volatile ("lidt %0" : : "m" (idt_operand));
     put_str("idt_init done.\n");
+}
+
+
+/**
+ * 开中断并返回之前的状态.
+ */ 
+enum intr_status intr_enable() {
+    enum intr_status old_status;
+    if (INTR_ON == intr_get_status()) {
+        old_status = INTR_ON;
+	return old_status;
+    }
+
+    old_status = INTR_OFF;
+    asm volatile ("sti");
+    return old_status;
+}
+
+/**
+ * 关中断并返回之前的状态.
+ */
+enum intr_status intr_disable() {
+    enum intr_status old_status;
+    if (INTR_OFF == intr_get_status()) {
+        old_status = INTR_OFF;
+        return old_status;
+    }
+
+    old_status = INTR_ON;
+    asm volatile ("cli" : : : "memory");
+    return old_status;
+}
+
+/**
+ * 获取中断状态.
+ */ 
+enum intr_status intr_get_status() {
+    uint32_t eflags = 0;
+    GET_EFLAGS(eflags);
+    return (EFLAGS_IF & eflags) ? INTR_ON : INTR_OFF;
+}
+
+enum intr_status intr_set_status(enum intr_status status) {
+    return status & INTR_ON ? intr_enable() : intr_disable();
 }
