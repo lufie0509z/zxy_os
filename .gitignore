@@ -57,3 +57,4 @@ dkms.conf
 *.out
 *.log
 test/*
+/src/kernel.s

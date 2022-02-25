@@ -4,6 +4,7 @@
 #include <kernel/global.h>
 
 # define BITMAP_MASK 1
+
 struct bitmap {
     uint32_t btmp_bytes_len;
     uint8_t* bits;

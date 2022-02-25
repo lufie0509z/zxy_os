@@ -36,3 +36,7 @@ docker run --rm -v $PWD:/home -it --platform linux/amd64 ubuntu  bash
  /* 再写入 counter_value 的高 8 位 */ 
 outb(counter_port, (uint8_t)counter_value >> 8);
 ```
+## 2.23
+### 完成简单的内存管理系统
+作者在摆烂了几天之后痛定思痛，开始报复性学习了  
+内存管理系统真的太烧脑了，前前后后看了两三遍，以后一定要着重复习这部分
