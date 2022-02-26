@@ -3,7 +3,7 @@ LD = ld
 AR = ar
 
 OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o debug.o string.o bitmap.o \
-          memory.o thread.o
+          memory.o thread.o list.o switch.o
 
 CFLAGS = -Wall -fno-pie -O -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32
@@ -18,6 +18,7 @@ all: kernel.bin kernel.elf libkernel.a
 	$(NASM) -f elf -o start.o start.s
 	$(NASM) -f elf -o print.o lib/kernel/print.s
 	$(NASM) -f elf -o kernel.o kernel/kernel.S
+	$(NASM) -f elf -o switch.o include/kernel/switch.S
 	gcc $(CFLAGS) -I./include -c -o main.o   	main.c 		
 	gcc $(CFLAGS) -I./include -c -o interrupt.o kernel/interrupt.c
 	gcc $(CFLAGS) -I./include -c -o init.o      kernel/init.c
@@ -27,6 +28,8 @@ all: kernel.bin kernel.elf libkernel.a
 	gcc $(CFLAGS) -I./include -c -o bitmap.o    lib/kernel/bitmap.c
 	gcc $(CFLAGS) -I./include -c -o memory.o    kernel/memory.c
 	gcc $(CFLAGS) -I./include -c -o thread.o    kernel/thread.c
+	gcc $(CFLAGS) -I./include -c -o list.o      lib/kernel/list.c
+
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)
 

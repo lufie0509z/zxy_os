@@ -2,6 +2,7 @@
 #define _KERNEL_THREAD_H
 #include <lib/kernel/stdint.h>
 #include <kernel/global.h>
+#include <lib/kernel/list.h>
 
 typedef void thread_func(void*);
 
@@ -56,15 +57,24 @@ struct thread_stack {
 
 //程序控制块PCB
 struct task_struct {
-   uint32_t* self_kstack;//内核线程自己的内核栈栈顶指针
-   enum task_status status;
-   uint8_t priority;
-   char name[16];
-   uint32_t stack_magic;//栈的边界标记，用于检测栈溢出
+
+    uint32_t* self_kstack;//内核线程自己的内核栈栈顶指针
+    enum task_status status;
+    uint8_t priority;
+    char name[16];
+    uint8_t ticks;//每次在处理器上执行的时间嘀嗒数
+    uint32_t elapsed_ticks;//总的时间嘀嗒数
+    struct list_elem general_tag;
+    struct list_elem all_list_tag;//线程被加入全部线程队列时使用
+    uint32_t* pgdir;//进程的页表的虚拟地址
+    uint32_t stack_magic;//栈的边界标记，用于检测栈溢出
 };
 
+struct task_struct* running_thread();
 void thread_create(struct task_struct* pthread, thread_func function, void* func_args);
 void init_thread(struct task_struct* pthread, char* name, int prio);
 struct task_struct* thread_start(char* name, int prio, thread_func function, void* func_args);
+void schedule();
+void thread_init(void);
 
 #endif

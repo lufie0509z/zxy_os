@@ -1,13 +1,14 @@
-# include <lib/kernel/stdint.h>
-# include <kernel/global.h>
-# include <kernel/io.h>
-# include <kernel/interrupt.h>
+#include <lib/kernel/stdint.h>
+#include <kernel/global.h>
+#include <kernel/io.h>
+#include <kernel/interrupt.h>
+#include <lib/kernel/print.h>
 
-# define IDT_DESC_CNT 0x21
-# define PIC_M_CTRL 0x20
-# define PIC_M_DATA 0x21
-# define PIC_S_CTRL 0xa0
-# define PIC_S_DATA 0xa1
+#define IDT_DESC_CNT 0x21
+#define PIC_M_CTRL 0x20
+#define PIC_M_DATA 0x21
+#define PIC_S_CTRL 0xa0
+#define PIC_S_DATA 0xa1
 
 #define EFLAGS_IF 0x00000200 // eflags 寄存器中的 if 位为 1 
 #define GET_EFLAGS(EFLAG_VAR) asm volatile("pushfl; popl %0" : "=g" (EFLAG_VAR))
@@ -40,9 +41,29 @@ static void general_intr_handler(uint8_t vec_nr) {
         // 伪中断，无需处理
         return;
     }
-    put_str("int vector: 0x");
-    put_int(vec_nr);
-    put_char('\n');
+    set_cursor(0);
+    int cursor_pos = 0;
+    while (cursor_pos < 320)
+    {
+        put_char(' ');
+        cursor_pos++;
+    }
+    set_cursor(0);
+    put_str("!!!!!!! excetion message begin !!!!!!!!\n");
+    set_cursor(88);
+    put_str(intr_name[vec_nr]);
+    if(vec_nr == 14) {//缺页中断pagefault，虚拟地址对应的物理地址不存在
+        int page_fault_vaddr = 0;
+        asm("movl %%cr2, %0" : "=r"(page_fault_vaddr));
+        put_str("page fault addr is:");
+        put_int(page_fault_vaddr); 
+    }
+    put_str("\n!!!!!!! excetion message end !!!!!!!!\n");
+    //中断处理程序表示已经处在关中断情况下
+    while(1);
+    // put_str("int vector: 0x");
+    // put_int(vec_nr);
+    // put_char('\n');
 }
 
 /**
@@ -197,4 +218,9 @@ enum intr_status intr_get_status() {
 
 enum intr_status intr_set_status(enum intr_status status) {
     return status & INTR_ON ? intr_enable() : intr_disable();
+}
+
+//注册中断处理函数
+void register_handler(uint8_t verctor_no, intr_handler function) {
+    idt_table[verctor_no] = function;
 }
