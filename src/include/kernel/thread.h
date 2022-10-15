@@ -2,6 +2,7 @@
 #define _KERNEL_THREAD_H
 #include <lib/kernel/stdint.h>
 #include <kernel/global.h>
+#include <kernel/list.h>
 
 typedef void thread_func(void*);
 
@@ -58,13 +59,27 @@ struct thread_stack {
 struct task_struct {
    uint32_t* self_kstack;//内核线程自己的内核栈栈顶指针
    enum task_status status;
-   uint8_t priority;
    char name[16];
+   uint8_t priority;
+   
+   uint8_t ticks;//嘀嗒数
+   uint32_t elapsed_ticks;//已经占用了的cpu嘀嗒数
+
+   struct list_elem general_tag;//一般队列中的节点
+   struct list_elem all_list_tag;//线程队列中的节点
+
+   uint32_t* pgdir;//进程页表的虚拟地址，线程为NULL
+   
    uint32_t stack_magic;//栈的边界标记，用于检测栈溢出
 };
 
 void thread_create(struct task_struct* pthread, thread_func function, void* func_args);
 void init_thread(struct task_struct* pthread, char* name, int prio);
 struct task_struct* thread_start(char* name, int prio, thread_func function, void* func_args);
+struct task_struct* running_thread(void);
+void schedule(void);
+void thread_init(void);
+
 
 #endif
+

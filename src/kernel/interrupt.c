@@ -2,6 +2,8 @@
 # include <kernel/global.h>
 # include <kernel/io.h>
 # include <kernel/interrupt.h>
+# include <lib/kernel/print.h>
+# include <kernel/debug.h>
 
 # define IDT_DESC_CNT 0x21
 # define PIC_M_CTRL 0x20
@@ -40,9 +42,34 @@ static void general_intr_handler(uint8_t vec_nr) {
         // 伪中断，无需处理
         return;
     }
-    put_str("int vector: 0x");
-    put_int(vec_nr);
-    put_char('\n');
+    // put_str("int vector: 0x");
+    // put_int(vec_nr);
+    // put_char('\n');
+
+    //清理最上方四行四行空间用于打印错误信息
+    set_cursor(0);
+    int cursor_pos = 0;
+    while (cursor_pos < 320)
+    {
+        put_char(' ');
+        cursor_pos++;
+    }
+
+    //打印错误信息
+    set_cursor(0);
+    put_str("!!!!!!!      excetion message begin  !!!!!!!!\n");
+    set_cursor(88);
+    put_str(intr_name[vec_nr]);
+    if (vec_nr == 14) {//缺页中断
+        int page_fault_vaddr = 0;
+        asm ("movl %%cr2, %0" : "=r" (page_fault_vaddr));	  // cr2是存放造成page_fault的地址
+        put_str("\npage fault addr is ");
+        put_int(page_fault_vaddr); 
+    }
+    put_str("\n!!!!!!!      excetion message end    !!!!!!!!\n");
+    
+    while (1);
+    
 }
 
 /**
@@ -161,15 +188,20 @@ void idt_init() {
  */ 
 enum intr_status intr_enable() {
     enum intr_status old_status;
+    
     if (INTR_ON == intr_get_status()) {
         old_status = INTR_ON;
-	return old_status;
+	    return old_status;
+    } else {
+        old_status = INTR_OFF;
+       
+        asm volatile ("sti");
+        
+        return old_status;
     }
-
-    old_status = INTR_OFF;
-    asm volatile ("sti");
-    return old_status;
 }
+
+
 
 /**
  * 关中断并返回之前的状态.
@@ -198,3 +230,9 @@ enum intr_status intr_get_status() {
 enum intr_status intr_set_status(enum intr_status status) {
     return status & INTR_ON ? intr_enable() : intr_disable();
 }
+
+//注册中断处理程序，将中断处理程序数组中第vecor_no个位置设置为函数function
+void register_handler(uint8_t vector_no, intr_handler function) {
+    idt_table[vector_no] = function;
+}
+

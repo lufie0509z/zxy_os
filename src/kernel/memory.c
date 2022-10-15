@@ -19,8 +19,6 @@
 # define PTE_INDEX(addr) ((addr & 0x003ff000) >> 12) 
 
 static void* vaddr_get(enum pool_flags pf, uint32_t pg_count);
-static uint32_t* pte_ptr(uint32_t vaddr);
-static uint32_t* pde_ptr(uint32_t vaddr);
 static void* palloc(struct pool* m_pool);
 static void page_table_add(void* _vaddr, void* _page_phyaddr);
 
@@ -148,14 +146,14 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_count) {
 /**
  * 得到虚拟地址对应的PTE的指针.
  */ 
-static uint32_t* pte_ptr(uint32_t vaddr) {
+uint32_t* pte_ptr(uint32_t vaddr) {
     return (uint32_t*) (0xffc00000 + ((vaddr & 0xffc00000) >> 10) + (PTE_INDEX(vaddr) << 2));
 }
 
 /**
  * 得到虚拟地址对应的PDE指针.
  */ 
-static uint32_t* pde_ptr(uint32_t vaddr) {
+uint32_t* pde_ptr(uint32_t vaddr) {
     return (uint32_t*) ((0xfffff000) + (PDE_INDEX(vaddr) << 2));
 }
 
@@ -230,6 +228,7 @@ void* malloc_page(enum pool_flags pf, uint32_t page_count) {
  * 在内核内存池中申请page_count个页.
  */ 
 void* get_kernel_pages(uint32_t page_count) {
+    
     void* vaddr = malloc_page(PF_KERNEL, page_count);
     if (vaddr != NULL) {
         memset(vaddr, 0, page_count * PAGE_SIZE);
