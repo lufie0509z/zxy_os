@@ -5,7 +5,7 @@
 # include <lib/kernel/print.h>
 # include <kernel/debug.h>
 
-# define IDT_DESC_CNT 0x21
+# define IDT_DESC_CNT 0x30 //目前支持的中断数
 # define PIC_M_CTRL 0x20
 # define PIC_M_DATA 0x21
 # define PIC_S_CTRL 0xa0
@@ -164,8 +164,9 @@ static void pic_init(void) {
     /* Open all IR */
     // outb(0x21, 0xfe);
     // outb(0xA1, 0xff);
-    outb(0x21, 0x0);
-    outb(0xA1, 0x0);
+    // 只打开键盘中断
+    outb(0x21, 0xfd);
+    outb(0xA1, 0xff);
 
     put_str("pic_init done.\n");
 }

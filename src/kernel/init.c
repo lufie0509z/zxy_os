@@ -3,6 +3,8 @@
 #include <device/timer.h>
 #include <kernel/memory.h>
 #include <kernel/thread.h>
+#include <device/console.h>
+#include <device/kerboard.h>
 
 void init_all() {
     put_str("init_all.\n");
@@ -11,4 +13,6 @@ void init_all() {
     mem_init();
     thread_init();
     timer_init();
+    console_init();
+    keyboard_init();
 }
