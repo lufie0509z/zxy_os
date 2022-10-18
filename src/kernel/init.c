@@ -4,7 +4,7 @@
 #include <kernel/memory.h>
 #include <kernel/thread.h>
 #include <device/console.h>
-#include <device/kerboard.h>
+#include <device/keyboard.h>
 
 void init_all() {
     put_str("init_all.\n");

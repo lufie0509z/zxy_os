@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "thread.h": "c",
+        "list.h": "c",
+        "global.h": "c",
+        "stdint.h": "c",
+        "print.h": "c",
+        "console.h": "c",
+        "interrupt.h": "c",
+        "kerboard.h": "c",
+        "keyboard.h": "c",
+        "ioqueue.h": "c"
+    }
+}

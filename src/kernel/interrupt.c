@@ -164,8 +164,8 @@ static void pic_init(void) {
     /* Open all IR */
     // outb(0x21, 0xfe);
     // outb(0xA1, 0xff);
-    // 只打开键盘中断
-    outb(0x21, 0xfd);
+    // 打开时钟中断和键盘中断
+    outb(0x21, 0xfc);
     outb(0xA1, 0xff);
 
     put_str("pic_init done.\n");

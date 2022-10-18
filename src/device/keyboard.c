@@ -1,8 +1,9 @@
-#include <device/kerboard.h>
+#include <device/keyboard.h>
 #include <kernel/interrupt.h>
 #include <lib/kernel/print.h>
 #include <kernel/io.h>
 #include <kernel/global.h>
+#include <device/ioqueue.h>
 
 #define KBD_BUFFER_PORT 0x60
 
@@ -33,6 +34,9 @@
 #define ctrl_r_make  	0xe01d
 #define ctrl_r_break 	0xe09d
 #define caps_lock_make 	0x3a
+
+//键盘缓冲区
+struct ioqueue kbd_buf;
 
 // 控制字符是否被按下
 // ext_scancode: 通码是否以0xe0开头
@@ -110,6 +114,8 @@ static void intr_keyboard_handler() {
     bool shift_down_last = shift_status;
     bool caps_down_last = caps_lock_status;
 
+    // ext_scancode = false;
+
     uint16_t scancode = inb(KBD_BUFFER_PORT);
     if (scancode == 0xe0) {
         ext_scancode = true;
@@ -152,7 +158,13 @@ static void intr_keyboard_handler() {
         char cur_ch = keymap[index][shift];
 
         if (cur_ch) {
-            put_char(cur_ch);
+            // put_char(cur_ch);
+            // 如果键盘缓冲区没有满
+            if (!ioq_full(&kbd_buf)) {
+                // put_char(cur_ch);
+                ioq_put_char(&kbd_buf, cur_ch);
+            }
+            
             return;
         }
 
@@ -174,6 +186,8 @@ static void intr_keyboard_handler() {
 
 void keyboard_init() {
     put_str("keyboard init start\n");
+    ioqueue_init(&kbd_buf);
+    ctrl_status = shift_status = alt_status = caps_lock_status = ext_scancode = false;
     register_handler(0x21, intr_keyboard_handler);
     put_str("keyboard init down\n");
 
