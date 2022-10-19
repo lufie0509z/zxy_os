@@ -35,12 +35,12 @@
 #define ctrl_r_break 	0xe09d
 #define caps_lock_make 	0x3a
 
-//键盘缓冲区
-struct ioqueue kbd_buf;
-
 // 控制字符是否被按下
 // ext_scancode: 通码是否以0xe0开头
 static bool ctrl_status, shift_status, alt_status, caps_lock_status, ext_scancode;
+
+//键盘缓冲区
+struct ioqueue kbd_buf;
 
 // 以通码make_code为索引的二维数组 
 static char keymap[][2] = {
@@ -161,7 +161,7 @@ static void intr_keyboard_handler() {
             // put_char(cur_ch);
             // 如果键盘缓冲区没有满
             if (!ioq_full(&kbd_buf)) {
-                // put_char(cur_ch);
+                put_char(cur_ch);
                 ioq_put_char(&kbd_buf, cur_ch);
             }
             
@@ -185,9 +185,10 @@ static void intr_keyboard_handler() {
 
 
 void keyboard_init() {
+
     put_str("keyboard init start\n");
     ioqueue_init(&kbd_buf);
-    ctrl_status = shift_status = alt_status = caps_lock_status = ext_scancode = false;
+    // ctrl_status = shift_status = alt_status = caps_lock_status = ext_scancode = false;
     register_handler(0x21, intr_keyboard_handler);
     put_str("keyboard init down\n");
 

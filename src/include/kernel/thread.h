@@ -4,6 +4,7 @@
 #include <kernel/global.h>
 #include <kernel/list.h>
 
+#define PG_SIZE 4096
 typedef void thread_func(void*);
 
 //进程的状态
