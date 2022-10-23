@@ -3,6 +3,8 @@
 #include <lib/kernel/stdint.h>
 #include <kernel/global.h>
 #include <kernel/list.h>
+#include <kernel/memory.h>
+#include <lib/kernel/bitmap.h>
 
 #define PG_SIZE 4096
 typedef void thread_func(void*);
@@ -48,7 +50,7 @@ struct thread_stack {
     uint32_t ebx;
     uint32_t edi;
     uint32_t esi;
-    //线程第一次执行时保存带运行的函数的地址，switch_to 函数实现任务切换用于保存任务切换后的新任务的返回地址。
+    //线程第一次执行时保存待运行的函数的地址，switch_to 函数实现任务切换用于保存任务切换后的新任务的返回地址。
     void (*eip) (thread_func* func, void* func_arg);
     /*****线程第一次被调度上cpu时使用*****/
     void (*unused_retadddr);//充当返回地址占位用
@@ -70,9 +72,13 @@ struct task_struct {
    struct list_elem all_list_tag;//线程队列中的节点
 
    uint32_t* pgdir;//进程页表的虚拟地址，线程为NULL
-   
+   struct virtual_addr userprog_vaddr; //用户进程的虚拟地址池
+
    uint32_t stack_magic;//栈的边界标记，用于检测栈溢出
 };
+
+extern struct list thread_ready_list;
+extern struct list thread_all_list;
 
 void thread_create(struct task_struct* pthread, thread_func function, void* func_args);
 void init_thread(struct task_struct* pthread, char* name, int prio);

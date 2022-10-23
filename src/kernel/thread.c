@@ -6,8 +6,10 @@
 #include <kernel/memory.h>
 #include <kernel/list.h>
 #include <kernel/interrupt.h>
-
-
+#include <kernel/process.h>
+#include <device/console.h>
+#include <kernel/global.h>
+#include <kernel/debug.h>
 
 struct task_struct* main_thread;//主线程的pcb
 struct list thread_ready_list;//就绪队列
@@ -59,6 +61,7 @@ void init_thread(struct task_struct* pthread, char* name, int prio) {
     pthread->ticks = prio;
     pthread->elapsed_ticks = 0;
     pthread->pgdir = NULL;
+
     //self_kstack 是线程自己在内核态下使用的栈顶地址
     pthread->stack_magic = 0x20000509;
 
@@ -70,8 +73,13 @@ struct task_struct* thread_start(char* name, int prio, thread_func function, voi
     // put_str(name);
     struct task_struct* thread = get_kernel_pages(1);
     
-    init_thread(thread, name, prio);   
+    init_thread(thread, name, prio); 
+    console_put_str(thread->name);
+    console_put_int((uint32_t)thread->pgdir);  
+    ASSERT(thread->pgdir == NULL);
     thread_create(thread, function, fun_arg);
+    console_put_int((uint32_t)thread->pgdir);
+    ASSERT(thread->pgdir == NULL);
     //将线程加入队列中
     ASSERT(!elem_find(&thread_ready_list, &thread->general_tag));
     list_append(&thread_ready_list, &thread->general_tag);
@@ -85,7 +93,7 @@ struct task_struct* thread_start(char* name, int prio, thread_func function, voi
 static void make_main_thread(void) {
     main_thread = running_thread();
     init_thread(main_thread, "main", 31);
-
+    ASSERT(main_thread->pgdir == NULL);
     ASSERT(!elem_find(&thread_all_list, &main_thread->all_list_tag));
     list_append(&thread_all_list, &main_thread->all_list_tag);
 }
@@ -112,6 +120,19 @@ void schedule(void) {
     //利用tag获取pcb的地址
     struct task_struct* next = elem2entry(struct task_struct, general_tag, thread_tag);
     next->status = TASK_RUNNING;
+    console_put_str("cur");
+    console_put_str(cur->name);
+    if (cur->pgdir == NULL) console_put_str("none");
+    else console_put_int((uint32_t)next->pgdir);
+    console_put_str("next");
+    console_put_str(&next->name);
+    if (next->pgdir == NULL) console_put_str("none");
+    else console_put_int((uint32_t)next->pgdir);
+
+    
+    // 更新页表， 如果是用户进程就更新 tss.ss0
+    process_activate(next);
+
     switch_to(cur, next);
 
 }
@@ -121,10 +142,10 @@ void thread_init(void) {
     put_str("thread_init start\n");
     list_init(&thread_ready_list);
     list_init(&thread_all_list);
-
+    thread_tag = NULL;
     make_main_thread();
 
-    put_str("thrad_init done\n");
+    put_str("thread_init done\n");
 }
 
 //线程讲自己阻塞，状态修改为stas
@@ -163,3 +184,4 @@ void thread_unblock(struct task_struct* pthread) {
     intr_set_status(old_status);
 
 }
+

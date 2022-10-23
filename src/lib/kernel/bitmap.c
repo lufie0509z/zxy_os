@@ -12,9 +12,9 @@ void bitmap_init(struct bitmap* btmap) {
 /**
  * 检测指定位是否为1,如果是,返回1.
  */
-int bitmap_scan_test(struct bitmap* btmap, uint32_t index) {
+uint8_t bitmap_scan_test(struct bitmap* btmap, uint32_t index) {
     uint32_t byte_index = (index / 8);
-    uint32_t bit_odd = byte_index % 8;
+    uint32_t bit_odd = index % 8;
 
     return (btmap->bits[byte_index] & BITMAP_MASK << bit_odd);
 }
@@ -64,6 +64,7 @@ int bitmap_scan(struct bitmap* btmp, uint32_t cnt) {
     } 
     return bit_idx_start;
 }
+
 
 void bitmap_set(struct bitmap* btmap, uint32_t index, int8_t value) {
     ASSERT(value == 0 || value == 1);

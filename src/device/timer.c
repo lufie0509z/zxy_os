@@ -21,7 +21,7 @@ static void frequency_set(uint8_t counter_port,
                           uint8_t rwl,
                           uint8_t counter_mode,
                           uint16_t counter_value) {
-    int divisor = 1193180 / 1000;       /* Calculate our divisor */
+    int divisor = 1193180 / 100;       /* Calculate our divisor */
     outb(PIT_CONTROL_PORT, (uint8_t) (counter_no << 6 | rwl << 4 | counter_mode << 1));
     outb(counter_port, counter_value);
     
@@ -60,6 +60,7 @@ static void intr_timer_handler(void) {
  */ 
 void timer_init() {
     put_str("timer_init start.\n");
+    ticks = 0;
     frequency_set(COUNTER0_PORT, COUNTER0_NO, READ_WRITE_LATCH, COUNTER_MODE, COUNTER0_VALUE);
     //注册时钟中断函数
     register_handler(0x20, intr_timer_handler);

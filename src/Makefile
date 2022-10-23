@@ -3,9 +3,9 @@ LD = ld
 AR = ar
 
 OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o debug.o string.o bitmap.o \
-          memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o
+          memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o process.o
 
-CFLAGS = -Wall -fno-pie -O -fstrength-reduce -fomit-frame-pointer \
+CFLAGS = -Wall -fno-pie -O0 -g -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32
 		 
 
@@ -34,6 +34,7 @@ all: kernel.bin kernel.elf libkernel.a
 	gcc $(CFLAGS) -I./include -c -o keyboard.o  device/keyboard.c
 	gcc $(CFLAGS) -I./include -c -o ioqueue.o   device/ioqueue.c
 	gcc $(CFLAGS) -I./include -c -o tss.o       kernel/tss.c
+	gcc $(CFLAGS) -I./include -c -o process.o   kernel/process.c
 
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)

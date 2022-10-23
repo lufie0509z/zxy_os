@@ -3,6 +3,7 @@
 #include <kernel/global.h>
 #include <kernel/debug.h>
 #include <kernel/interrupt.h>
+#include <lib/kernel/print.h>
 
 void sema_init(struct semaphore* psema, uint8_t value) {
     psema->value = value;
@@ -21,6 +22,7 @@ void sema_down(struct semaphore* psema) {
     enum intr_status old_status = intr_disable();
 
     while (psema->value == 0) {//锁还在被别人持有
+
         ASSERT(!elem_find(&psema->waiters, &running_thread()->general_tag));
         if (elem_find(&psema->waiters, &running_thread()->general_tag)) {
             PANIC("sema down: blocked thread has been in the waiter_lists");

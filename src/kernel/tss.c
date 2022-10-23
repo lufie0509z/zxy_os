@@ -2,6 +2,7 @@
 #include <kernel/thread.h>
 #include <kernel/global.h>
 #include <lib/kernel/print.h>
+#include <kernel/string.h>
 
 struct TSS {
     uint32_t backlink;
