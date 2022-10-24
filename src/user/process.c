@@ -1,7 +1,7 @@
 #include <kernel/thread.h>
 #include <kernel/global.h>
 #include <kernel/memory.h>
-#include <kernel/process.h>
+#include <user/process.h>
 #include <kernel/tss.h>
 #include <device/console.h>>
 #include <kernel/string.h>
@@ -48,7 +48,7 @@ void page_dir_activate(struct task_struct* pthread) {
         // console_put_int(pthread->pgdir);
         // console_put_char('\n');
         page_phy_addr = addr_v2p((uint32_t)pthread->pgdir);
-        put_int(page_phy_addr);
+        // put_int(page_phy_addr);
         // put_char("\n");
         // ASSERT(1 == 2);
     }
@@ -83,9 +83,9 @@ void process_activate(struct task_struct* pthread) {
 //为用户进程创建页目录表
 uint32_t* create_page_dir() {
     uint32_t* page_dir_vaddr = get_kernel_pages(1); //在内核空间中获取一页作为用户进程的页表
-    console_put_char("\n");
-    console_put_str("page_dir_vaddr");
-    console_put_str((uint32_t)page_dir_vaddr);
+    // console_put_char("\n");
+    // console_put_str("page_dir_vaddr");
+    // console_put_str((uint32_t)page_dir_vaddr);
     if (page_dir_vaddr == NULL) {
         console_put_str("create_page_dir: get_kernel_page failed!");
         return NULL;
@@ -100,7 +100,7 @@ uint32_t* create_page_dir() {
    
     //使用户进程页目录表的最后一项指向页目录表本身的物理地址
     uint32_t page_dir_phyaddr = addr_v2p(page_dir_vaddr);
-    console_put_int(page_dir_vaddr);
+    // console_put_int(page_dir_vaddr);
     page_dir_vaddr[1023] = page_dir_phyaddr | PG_US_S | PG_RW_W | PG_P_1;
 
     return page_dir_vaddr;

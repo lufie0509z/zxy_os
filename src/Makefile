@@ -13,8 +13,7 @@ all: kernel.bin kernel.elf libkernel.a
 	mv *.o *.a ./build/
 
 %.o: %.s
-	mkdir build
-	mkdir build/user/
+	if [ ! -d ./build ];then mkdir build build/user/ ;fi
 	$(NASM) -f elf -o start.o start.s
 	$(NASM) -f elf -o print.o lib/kernel/print.s
 	$(NASM) -f elf -o kernel.o kernel/kernel.S
@@ -34,7 +33,7 @@ all: kernel.bin kernel.elf libkernel.a
 	gcc $(CFLAGS) -I./include -c -o keyboard.o  device/keyboard.c
 	gcc $(CFLAGS) -I./include -c -o ioqueue.o   device/ioqueue.c
 	gcc $(CFLAGS) -I./include -c -o tss.o       kernel/tss.c
-	gcc $(CFLAGS) -I./include -c -o process.o   kernel/process.c
+	gcc $(CFLAGS) -I./include -c -o process.o   user/process.c
 
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)

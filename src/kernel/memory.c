@@ -198,7 +198,7 @@ static void page_table_add(void* _vaddr, void* _page_phyaddr) {
    
     if (*pde & 0x00000001) {
         // 页目录项已经存在
-        console_put_str("have");
+  
         if (!(*pte & 0x00000001)) {
             // 物理页必定不存在，使页表项指向我们新分配的物理页
             *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
@@ -207,26 +207,19 @@ static void page_table_add(void* _vaddr, void* _page_phyaddr) {
         }
     } else {
         // 新分配一个物理页作为页表
-        console_put_str("not");
         uint32_t pde_phyaddr = (uint32_t) palloc(&kernel_pool);
         *pde = (pde_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
-        console_put_int(*pde);
-        console_put_char('\n');
-        console_put_int(*pte);
-        console_put_int(((int)pte & 0xfffff000));
         // 清理物理页
         // ASSERT(3== 2);
-        // memset((void*)((int)pte & 0xfffff000), 0, PG_SIZE);  
+        memset((void*)((int)pte & 0xfffff000), 0, PG_SIZE);  
         // ASSERT(3== 2);
         ASSERT(!(*pte & 0x00000001));
-        console_put_int(page_phyaddr);
         // ASSERT(3== 2);
         *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
         // ASSERT(1 == 2);
     }
      if(vaddr == (0xc0000000 - 0x1000)){
-console_put_int(vaddr);
-    console_put_int(page_phyaddr);
+
     // ASSERT(1 == 2);
     }
 }
@@ -316,8 +309,6 @@ void* get_a_page(enum pool_flags pf, uint32_t vaddr) {
 
     void* page_phyaddr = palloc(mem_pool); //在给定的物理内存池中分配一页物理地址
     if (page_phyaddr == NULL) return NULL;
-   console_put_int(vaddr);
-    console_put_int(page_phyaddr);
     
     page_table_add((void*)vaddr, page_phyaddr);
 //   ASSERT(1 == 2);

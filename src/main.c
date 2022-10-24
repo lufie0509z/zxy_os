@@ -6,7 +6,7 @@
 #include <kernel/debug.h>
 #include <kernel/interrupt.h>
 #include <device/console.h>
-#include <kernel/process.h>
+#include <user/process.h>
 #include <kernel/global.h>
 #include <kernel/memory.h>
 void k_thread_a(void*); // 内核线程

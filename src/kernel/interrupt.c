@@ -5,7 +5,7 @@
 # include <lib/kernel/print.h>
 # include <kernel/debug.h>
 
-# define IDT_DESC_CNT 0x30 //目前支持的中断数
+# define IDT_DESC_CNT 0x81 //目前支持的中断数
 # define PIC_M_CTRL 0x20
 # define PIC_M_DATA 0x21
 # define PIC_S_CTRL 0xa0
@@ -33,6 +33,7 @@ static void init_custom_handler_name();
 static struct gate_desc idt[IDT_DESC_CNT];
 
 extern intr_handler intr_entry_table[IDT_DESC_CNT];
+extern uint32_t syscall_handler(void); //系统调用对应的中断入口程序
 
 /**
  * 通用的中断处理函数.
@@ -129,6 +130,9 @@ static void idt_desc_init(void) {
     for (i = 0; i < IDT_DESC_CNT; i++) {
         make_idt_desc(&idt[i], IDT_DESC_ATTR_DPL0, intr_entry_table[i]);
     }
+
+    //系统调用，需要指定描述符的dpl为用户级
+    // make_idt_desc(&idt[0x80], IDT_DESC_ATTR_DPL3, syscall_handler); 
     put_str("idt_desc_init done.\n");
 }
 

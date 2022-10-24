@@ -6,7 +6,7 @@
 #include <kernel/memory.h>
 #include <kernel/list.h>
 #include <kernel/interrupt.h>
-#include <kernel/process.h>
+#include <user/process.h>
 #include <device/console.h>
 #include <kernel/global.h>
 #include <kernel/debug.h>
@@ -75,11 +75,11 @@ struct task_struct* thread_start(char* name, int prio, thread_func function, voi
     struct task_struct* thread = get_kernel_pages(1);
     
     init_thread(thread, name, prio); 
-    console_put_str(thread->name);
-    console_put_int((uint32_t)thread->pgdir);  
+    // console_put_str(thread->name);
+    // console_put_int((uint32_t)thread->pgdir);  
     ASSERT(thread->pgdir == NULL);
     thread_create(thread, function, fun_arg);
-    console_put_int((uint32_t)thread->pgdir);
+    // console_put_int((uint32_t)thread->pgdir);
     ASSERT(thread->pgdir == NULL);
     //将线程加入队列中
     ASSERT(!elem_find(&thread_ready_list, &thread->general_tag));

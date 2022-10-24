@@ -1,5 +1,5 @@
-#ifndef __KERNEL_PROCESS_H
-#define __KERNEL_PROCESS_H
+#ifndef __USER_PROCESS_H
+#define __USER_PROCESS_H
 #include <lib/kernel/stdint.h>
 #include <kernel/thread.h>
 
