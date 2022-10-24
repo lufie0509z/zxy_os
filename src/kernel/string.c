@@ -1,5 +1,5 @@
-# include <kernel/global.h>
-# include <kernel/debug.h>
+#include <kernel/global.h>
+#include <kernel/debug.h>
 
 /* 将dst_起始的size个字节置为value */
 void memset(void* dst_, uint8_t value, uint32_t size) {

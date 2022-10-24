@@ -36,8 +36,8 @@ struct TSS {
 
 static struct TSS tss;
 
-void update_tss_esp(struct task_thread* pthread) {
-    tss.ss0 = (uint32_t*)((uint32_t)pthread + PG_SIZE);
+void update_tss_esp(struct task_struct* pthread) {
+    tss.esp0 = (uint32_t*)((uint32_t)pthread + PG_SIZE);
 }
 
 //填充描述符的字段后返回
@@ -72,7 +72,7 @@ void tss_init() {
 
     //向 gdt 中添加 dpl 为 3 的数据段和代码段
     *((struct gdt_desc*)0xc0000928) = make_gdt_desc((uint32_t*)0, 0xfffff, GDT_CODE_ATTR_LOW_DPL3, GDT_ATTR_HIGH);
-    *((struct gdt_desc*)0xc0000930) = make_gdt_desc((uint32_t*)0, 0xfffff, GDT_CODE_ATTR_LOW_DPL3, GDT_ATTR_HIGH);
+    *((struct gdt_desc*)0xc0000930) = make_gdt_desc((uint32_t*)0, 0xfffff, GDT_DATA_ATTR_LOW_DPL3, GDT_ATTR_HIGH);
 
     //获取 gdt 的 16 位表界限&32 位表的起始地址
     uint64_t gdt_operand = ((8 * 7 - 1) | (uint64_t)(uint32_t)0xc0000900 << 16);

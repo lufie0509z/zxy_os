@@ -23,6 +23,7 @@ extern void switch_to(struct task_struct* cur, struct tasK_struct* next);
 struct task_struct* running_thread() {
     uint32_t esp;
     asm ("mov %%esp, %0" : "=g" (esp)); //获取当前的栈指针，各线程 0 特权级栈都是在自己的 PCB 当中
+  
     return (struct task_struct*)(esp & 0xfffff000);
 }
  
@@ -120,14 +121,14 @@ void schedule(void) {
     //利用tag获取pcb的地址
     struct task_struct* next = elem2entry(struct task_struct, general_tag, thread_tag);
     next->status = TASK_RUNNING;
-    console_put_str("cur");
-    console_put_str(cur->name);
-    if (cur->pgdir == NULL) console_put_str("none");
-    else console_put_int((uint32_t)next->pgdir);
-    console_put_str("next");
-    console_put_str(&next->name);
-    if (next->pgdir == NULL) console_put_str("none");
-    else console_put_int((uint32_t)next->pgdir);
+    // console_put_str("cur");
+    // console_put_str(cur->name);
+    // if (cur->pgdir == NULL) console_put_str("none");
+    // else console_put_int((uint32_t)next->pgdir);
+    // console_put_str("next");
+    // console_put_str(&next->name);
+    // if (next->pgdir == NULL) console_put_str("none");
+    // else console_put_int((uint32_t)next->pgdir);
 
     
     // 更新页表， 如果是用户进程就更新 tss.ss0

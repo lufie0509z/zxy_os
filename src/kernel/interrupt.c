@@ -165,22 +165,10 @@ static void pic_init(void) {
     // outb(0x21, 0xfe);
     // outb(0xA1, 0xff);
     // 打开时钟中断和键盘中断
-    outb(0x21, 0xfc);
+    outb(0x21, 0xfe);
     outb(0xA1, 0xff);
 
     put_str("pic_init done.\n");
-}
-
-void idt_init() {
-    put_str("idt_init start.\n");
-    idt_desc_init();
-    exception_handler_init();
-    pic_init();
-
-    // 加载idt
-    uint64_t idt_operand = ((sizeof(idt) - 1) | ((uint64_t) ((uint32_t) idt << 16)));
-    asm volatile ("lidt %0" : : "m" (idt_operand));
-    put_str("idt_init done.\n");
 }
 
 
@@ -235,5 +223,20 @@ enum intr_status intr_set_status(enum intr_status status) {
 //注册中断处理程序，将中断处理程序数组中第vecor_no个位置设置为函数function
 void register_handler(uint8_t vector_no, intr_handler function) {
     idt_table[vector_no] = function;
+}
+
+
+
+void idt_init() {
+    put_str("idt_init start.\n");
+    idt_desc_init();
+    exception_handler_init();
+    pic_init();
+
+    // 加载idt
+    uint64_t idt_operand = ((sizeof(idt) - 1) | ((uint64_t)(uint32_t)idt << 16));
+    // uint64_t idt_operand = ((sizeof(idt) - 1) | ((uint64_t) ((uint32_t) idt << 16)));
+    asm volatile ("lidt %0" : : "m" (idt_operand));
+    put_str("idt_init done.\n");
 }
 

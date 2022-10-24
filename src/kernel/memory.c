@@ -125,11 +125,6 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_count) {
     uint32_t count = 0;
 
     if (pf == PF_KERNEL) {
-        console_put_str("   before scan");
-        for (uint32_t i = 0; i < 16; i++) {
-            console_put_int(kernel_vaddr.vaddr_bitmap.bits[i]);
-            console_put_char(' ');
-        }
         bit_idx_start = bitmap_scan(&kernel_vaddr.vaddr_bitmap, pg_count);
         // put_str("var_bit_index");
         // put_int(bit_idx_start);
@@ -138,29 +133,11 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_count) {
             // 申请失败，虚拟内存不足
             return NULL;
         }
-        console_put_str("   vaddr_get:bit_idx_start");
-        console_put_int(bit_idx_start);
-        console_put_str("pg_count");
-        console_put_int(pg_count);
-        console_put_str("   after scan not set");
-        for (uint32_t i = 0; i < 16; i++) {
-            console_put_int(kernel_vaddr.vaddr_bitmap.bits[i]);
-            console_put_char(' ');
-        }
-
-
         // 修改bitmap，占用虚拟内存
         while (count < pg_count) {
             bitmap_set(&kernel_vaddr.vaddr_bitmap, (bit_idx_start + count), 1);
             ++count;
         }
-        console_put_str("after set");
-        for (uint32_t i = 0; i < 16; i++) {
-            console_put_int(kernel_vaddr.vaddr_bitmap.bits[i]);
-            console_put_char(' ');
-        }
-          console_put_char('\n');
-
         vaddr_start = (kernel_vaddr.vaddr_start + bit_idx_start * PG_SIZE); 
     } else { // 用户内存池
         struct task_struct* cur = running_thread();
@@ -217,10 +194,11 @@ static void page_table_add(void* _vaddr, void* _page_phyaddr) {
     uint32_t vaddr = (uint32_t) _vaddr, page_phyaddr = (uint32_t) _page_phyaddr;
     uint32_t* pde = pde_ptr(vaddr); 
     uint32_t* pte = pte_ptr(vaddr);
-
+    
+   
     if (*pde & 0x00000001) {
         // 页目录项已经存在
-        
+        console_put_str("have");
         if (!(*pte & 0x00000001)) {
             // 物理页必定不存在，使页表项指向我们新分配的物理页
             *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
@@ -229,14 +207,29 @@ static void page_table_add(void* _vaddr, void* _page_phyaddr) {
         }
     } else {
         // 新分配一个物理页作为页表
+        console_put_str("not");
         uint32_t pde_phyaddr = (uint32_t) palloc(&kernel_pool);
         *pde = (pde_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
+        console_put_int(*pde);
+        console_put_char('\n');
+        console_put_int(*pte);
+        console_put_int(((int)pte & 0xfffff000));
         // 清理物理页
-        memset((void*) ((int) pte & 0xfffff000), 0, PG_SIZE);
+        // ASSERT(3== 2);
+        // memset((void*)((int)pte & 0xfffff000), 0, PG_SIZE);  
+        // ASSERT(3== 2);
+        ASSERT(!(*pte & 0x00000001));
+        console_put_int(page_phyaddr);
+        // ASSERT(3== 2);
         *pte = (page_phyaddr | PG_US_U | PG_RW_W | PG_P_1);
+        // ASSERT(1 == 2);
+    }
+     if(vaddr == (0xc0000000 - 0x1000)){
+console_put_int(vaddr);
+    console_put_int(page_phyaddr);
+    // ASSERT(1 == 2);
     }
 }
-
 
 
 /**
@@ -306,15 +299,14 @@ void* get_a_page(enum pool_flags pf, uint32_t vaddr) {
 
     struct task_struct* cur = running_thread();
     int32_t bit_idx = -1;
-
+    
+    
     //如果是用户进程申请用户内存，就修改用户自己的虚拟地址位图
     if (cur->pgdir != NULL && pf == PF_USER) {
-        console_put_str("   programe process");
         bit_idx = (vaddr - cur->userprog_vaddr.vaddr_start) / PG_SIZE;
         ASSERT(bit_idx > 0);
         bitmap_set(&cur->userprog_vaddr.vaddr_bitmap, bit_idx, 1);
     } else if (cur->pgdir == NULL && pf == PF_KERNEL) {//内核线程申请内核内
-        console_put_str("   kernel thread");
         bit_idx = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
         ASSERT(bit_idx > 0);
         bitmap_set(&kernel_vaddr.vaddr_bitmap, bit_idx, 1);
@@ -324,8 +316,11 @@ void* get_a_page(enum pool_flags pf, uint32_t vaddr) {
 
     void* page_phyaddr = palloc(mem_pool); //在给定的物理内存池中分配一页物理地址
     if (page_phyaddr == NULL) return NULL;
-
+   console_put_int(vaddr);
+    console_put_int(page_phyaddr);
+    
     page_table_add((void*)vaddr, page_phyaddr);
+//   ASSERT(1 == 2);
     lock_release(&mem_pool->lock);
 
     return (void*) page_phyaddr;
