@@ -9,66 +9,66 @@
 #include <user/process.h>
 #include <kernel/global.h>
 #include <kernel/memory.h>
-void k_thread_a(void*); // 内核线程
+#include <user/syscall.h>
+#include <user/syscall-init.h>
+
+
+void k_thread_a(void*);
 void k_thread_b(void*);
+void u_prog_a(void);
+void u_prog_b(void);
 
-void uprog_a(void*); // 用户进程
-void uprog_b(void*);
-
-int test_var_a = 0, test_var_b = 0;
-
+int prog_a_pid = 0, prog_b_pid = 0;
 int main(void) {
    put_str("I am kernel\n");
-
    init_all();
-   // console_put_int(test_var_a);
-   // console_put_char('\n');
- 
-   thread_start("k_thread_a", 31, k_thread_a, "argA ");
-   thread_start("k_thread_b", 8,  k_thread_b, "argB ");
 
+   process_execute(u_prog_a, "user_prog_a");
+   process_execute(u_prog_b, "user_prog_b");
 
-   //  void* addr = get_kernel_pages(10);
-   process_execute(uprog_a, "user_prog_a");
-   process_execute(uprog_b, "user_prog_b");
- 
    
-   intr_enable();	// 打开中断,使时钟中断起作用
-   while (1);
-
-   // while(1) {
-   //    console_put_str("Main: ");
-   // };
+   console_put_str(" main_pid:0x");
+   console_put_int(sys_getpid());
+   console_put_char('\n');
+   thread_start("k_thread_a", 31, k_thread_a, "argA ");
+   thread_start("k_thread_b", 31, k_thread_b, "argB ");
+   intr_enable();
+   while(1);
    return 0;
 }
 
-
+/* 在线程中运行的函数 */
 void k_thread_a(void* arg) {     
    char* para = arg;
-   while(1) {
-      console_put_str("v_a: 0x");
-      console_put_int(test_var_a);
-      console_put_char('\n');
-   }
+   console_put_str(" thread_a_pid:0x");
+   console_put_int(sys_getpid());
+   console_put_char('\n');
+   console_put_str(" prog_a_pid:0x");
+   console_put_int(prog_a_pid);
+   console_put_char('\n');
+   while(1);
 }
 
+/* 在线程中运行的函数 */
 void k_thread_b(void* arg) {     
    char* para = arg;
-   while(1) {
-      console_put_str("v_b: 0x");
-      console_put_int(test_var_b);
-      console_put_char('\n');
-   }
+   console_put_str(" thread_b_pid:0x");
+   console_put_int(sys_getpid());
+   console_put_char('\n');
+   console_put_str(" prog_b_pid:0x");
+   console_put_int(prog_b_pid);
+   console_put_char('\n');
+   while(1);
 }
 
-void uprog_a(void* arg) {
-   while (1) {
-      test_var_a++;   
-   }
+/* 测试用户进程 */
+void u_prog_a(void) {
+   prog_a_pid = getpid();
+   while(1);
 }
 
-void uprog_b(void* arg) {
-   while (1) {
-      test_var_b++;
-   }  
+/* 测试用户进程 */
+void u_prog_b(void) {
+   prog_b_pid = getpid();
+   while(1);
 }

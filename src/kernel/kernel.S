@@ -103,3 +103,30 @@ VECTOR 0x2c,ZERO	;ps/2鼠标
 VECTOR 0x2d,ZERO	;fpu浮点单元异常
 VECTOR 0x2e,ZERO	;硬盘
 VECTOR 0x2f,ZERO	;保留
+
+; 0x80 号中断
+; 系统调用
+[bits 32]
+extern syscall_table ;系统调用中子功能对应的处理函数
+section .text
+global syscall_handler ;中断例程
+syscall_handler:
+  push 0
+
+  push ds
+  push es
+  push fs
+  push gs
+  pushad  ;其入栈顺序是: EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI
+  push 0x80
+
+  ; 为系统调用子功能函数准备参数
+  push edx 
+  push ecx
+  push ebx
+
+  call [syscall_table + eax * 4] 
+  add esp, 12 ; 跨过上面的三个参数
+
+  mov [esp + 8 * 4], eax ;将函数返回值写到了栈(此时是内核栈)中保存 eax 的那个内存空间
+  jmp intr_exit

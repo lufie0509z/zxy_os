@@ -8,6 +8,7 @@
 
 #define PG_SIZE 4096
 typedef void thread_func(void*);
+typedef int16_t pid_t;
 
 //进程的状态
 enum task_status {
@@ -61,6 +62,7 @@ struct thread_stack {
 //程序控制块PCB
 struct task_struct {
    uint32_t* self_kstack;//内核线程自己的内核栈栈顶指针
+   pid_t pid;
    enum task_status status;
    char name[16];
    uint8_t priority;

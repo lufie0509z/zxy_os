@@ -49,7 +49,7 @@ static void mem_pool_init(uint32_t all_memory) {
     uint32_t free_mem = (all_memory - used_mem);
     uint16_t free_pages = free_mem / PG_SIZE;
 
-    uint16_t kernel_free_pages = (free_pages >> 1);
+    uint16_t kernel_free_pages = (free_pages  / 2);
     uint16_t user_free_pages = (free_pages - kernel_free_pages);
 
     // 内核空间bitmap长度(字节)，每一位代表一页
@@ -314,7 +314,7 @@ void* get_a_page(enum pool_flags pf, uint32_t vaddr) {
 //   ASSERT(1 == 2);
     lock_release(&mem_pool->lock);
 
-    return (void*) page_phyaddr;
+    return (void*) vaddr;
 }
 
 /**

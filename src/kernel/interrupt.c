@@ -132,7 +132,7 @@ static void idt_desc_init(void) {
     }
 
     //系统调用，需要指定描述符的dpl为用户级
-    // make_idt_desc(&idt[0x80], IDT_DESC_ATTR_DPL3, syscall_handler); 
+    make_idt_desc(&idt[0x80], IDT_DESC_ATTR_DPL3, syscall_handler); 
     put_str("idt_desc_init done.\n");
 }
 

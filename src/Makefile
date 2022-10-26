@@ -3,7 +3,8 @@ LD = ld
 AR = ar
 
 OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o debug.o string.o bitmap.o \
-          memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o process.o
+          memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o process.o \
+		  syscall.o syscall-init.o
 
 CFLAGS = -Wall -fno-pie -O0 -g -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32
@@ -18,22 +19,24 @@ all: kernel.bin kernel.elf libkernel.a
 	$(NASM) -f elf -o print.o lib/kernel/print.s
 	$(NASM) -f elf -o kernel.o kernel/kernel.S
 	$(NASM) -f elf -o switch.o kernel/switch.s
-	gcc $(CFLAGS) -I./include -c -o main.o   	main.c 		
-	gcc $(CFLAGS) -I./include -c -o interrupt.o kernel/interrupt.c
-	gcc $(CFLAGS) -I./include -c -o init.o      kernel/init.c
-	gcc $(CFLAGS) -I./include -c -o timer.o     device/timer.c
-	gcc $(CFLAGS) -I./include -c -o debug.o     kernel/debug.c
-	gcc $(CFLAGS) -I./include -c -o string.o    kernel/string.c
-	gcc $(CFLAGS) -I./include -c -o bitmap.o    lib/kernel/bitmap.c
-	gcc $(CFLAGS) -I./include -c -o memory.o    kernel/memory.c
-	gcc $(CFLAGS) -I./include -c -o thread.o   	kernel/thread.c 
-	gcc $(CFLAGS) -I./include -c -o list.o   	lib/kernel/list.c  
-	gcc $(CFLAGS) -I./include -c -o sync.o  	kernel/sync.c 
-	gcc $(CFLAGS) -I./include -c -o console.o   device/console.c
-	gcc $(CFLAGS) -I./include -c -o keyboard.o  device/keyboard.c
-	gcc $(CFLAGS) -I./include -c -o ioqueue.o   device/ioqueue.c
-	gcc $(CFLAGS) -I./include -c -o tss.o       kernel/tss.c
-	gcc $(CFLAGS) -I./include -c -o process.o   user/process.c
+	gcc $(CFLAGS) -I./include -c -o main.o   	        main.c 		
+	gcc $(CFLAGS) -I./include -c -o interrupt.o         kernel/interrupt.c
+	gcc $(CFLAGS) -I./include -c -o init.o              kernel/init.c
+	gcc $(CFLAGS) -I./include -c -o timer.o             device/timer.c
+	gcc $(CFLAGS) -I./include -c -o debug.o             kernel/debug.c
+	gcc $(CFLAGS) -I./include -c -o string.o            kernel/string.c
+	gcc $(CFLAGS) -I./include -c -o bitmap.o            lib/kernel/bitmap.c
+	gcc $(CFLAGS) -I./include -c -o memory.o            kernel/memory.c
+	gcc $(CFLAGS) -I./include -c -o thread.o   	        kernel/thread.c 
+	gcc $(CFLAGS) -I./include -c -o list.o   	        lib/kernel/list.c  
+	gcc $(CFLAGS) -I./include -c -o sync.o  	        kernel/sync.c 
+	gcc $(CFLAGS) -I./include -c -o console.o           device/console.c
+	gcc $(CFLAGS) -I./include -c -o keyboard.o          device/keyboard.c
+	gcc $(CFLAGS) -I./include -c -o ioqueue.o           device/ioqueue.c
+	gcc $(CFLAGS) -I./include -c -o tss.o               kernel/tss.c
+	gcc $(CFLAGS) -I./include -c -o process.o           user/process.c
+	gcc $(CFLAGS) -I./include -c -o syscall.o           user/syscall.c
+	gcc $(CFLAGS) -I./include -c -o syscall-init.o      user/syscall-init.c
 
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)
