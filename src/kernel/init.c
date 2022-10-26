@@ -8,11 +8,10 @@
 #include <kernel/tss.h>
 #include <kernel/init.h>
 
-extern int prog_a_pid, prog_b_pid;
+// extern int prog_a_pid, prog_b_pid;
 void init_all() {
     put_str("init_all.\n");
-    prog_a_pid = 0;
-    prog_b_pid = 0;
+   
     idt_init();
     mem_init();
     thread_init();
