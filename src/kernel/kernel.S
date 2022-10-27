@@ -120,33 +120,33 @@ syscall_handler:
   pushad  ;其入栈顺序是: EAX,ECX,EDX,EBX,ESP,EBP,ESI,EDI
   push 0x80
 
-;   ; 为系统调用子功能函数准备参数
-;   push edx 
-;   push ecx
-;   push ebx
+  ; 为系统调用子功能函数准备参数
+  push edx 
+  push ecx
+  push ebx
 
-;   call [syscall_table + eax * 4] 
-;   add esp, 12 ; 跨过上面的三个参数
+  call [syscall_table + eax * 4] 
+  add esp, 12 ; 跨过上面的三个参数
 
-;   mov [esp + 8 * 4], eax ;将函数返回值写到了栈(此时是内核栈)中保存 eax 的那个内存空间
-;   jmp intr_exit
+  mov [esp + 8 * 4], eax ;将函数返回值写到了栈(此时是内核栈)中保存 eax 的那个内存空间
+  jmp intr_exit
 
 ; 利用栈传递参数
 ; 从内核栈中获取 cpu 自动压入的用户栈指针 esp 的值
 ; 中断发生后，处理器由低特权进入高特权级，它会把 ss3、esp3、eflag、cs、eip 依次压入栈中，
-  mov ebx, [esp + 4 + 48 + 4 + 12] 
+;   mov ebx, [esp + 4 + 48 + 4 + 12] 
 
   
-; 将用户栈空间中的参数读出再压入内核栈中
-   push dword [ebx + 12]	   
-   push dword [ebx + 8]		    
-   push dword [ebx + 4]		   
-   mov edx, [ebx]		    ;系统调用的子功能号
+; ; 将用户栈空间中的参数读出再压入内核栈中
+;    push dword [ebx + 12]	   
+;    push dword [ebx + 8]		    
+;    push dword [ebx + 4]		   
+;    mov edx, [ebx]		    ;系统调用的子功能号
 
    
-   call [syscall_table + edx * 4]
-   add esp, 12			    ; 跨过上面的三个参数
+;    call [syscall_table + edx * 4]
+;    add esp, 12			    ; 跨过上面的三个参数
 
-   mov [esp + 8 * 4], eax	
-   jmp intr_exit		    
+;    mov [esp + 8 * 4], eax	
+;    jmp intr_exit		    
 
