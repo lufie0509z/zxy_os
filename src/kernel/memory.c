@@ -5,6 +5,7 @@
 #include <kernel/string.h>
 #include <kernel/sync.h>
 #include <device/console.h>
+#include <kernel/interrupt.h>
 
 # define PG_SIZE 4096
 
@@ -31,6 +32,18 @@ struct pool {
 
 struct pool kernel_pool, user_pool;
 struct virtual_addr kernel_vaddr;
+
+
+// 内存仓库 arena
+struct arena {
+    struct mem_block_desc* desc;  //内存块描述符
+
+    uint32_t cnt; // large 为 true, 表示页框数，否则表示空闲的内存块数量
+    bool large;
+};
+
+struct mem_block_desc k_block_descs[DESC_CNT]; //内存块描述符数组
+
 
 /**
  * 初始化内存池.
@@ -328,11 +341,129 @@ uint32_t addr_v2p(uint32_t vaddr) {
     return phyaddr;
 }
 
+//内存块描述符初始化
+void block_desc_init(struct mem_block_desc* desc_array) {
+    uint32_t index = 0, block_size = 16;
+
+    for (index = 0; index < DESC_CNT; index++) {
+        desc_array[index].block_size = block_size;
+        desc_array[index].block_per_arena = (PG_SIZE - sizeof(struct arena)) / block_size;
+        list_init(&desc_array[index].free_list);
+
+        block_size *= 2;
+    }
+
+}
+
+//返回 arena 中第 idx 个内存块的地址
+static struct mem_block* arena2block(struct arena* a, uint32_t idx) {
+    return (struct mem_block*)((uint32_t)a + sizeof(struct arena) + idx * a->desc->block_size);
+}
+
+//返回内存块 b 所在的 arena 的虚拟地址
+static struct arena* block2arena(struct mem_block* b) {
+    return (struct arena*)((uint32_t)b & 0xfffff000);
+}
+
+//申请 size 字节的内存
+void* sys_malloc(uint32_t size) {
+
+    enum pool_flags PF;
+    struct pool* mem_pool;
+    uint32_t pool_size;
+    struct mem_block_desc* descs;
+    struct task_struct* cur_thread = running_thread();
+
+    if (cur_thread->pgdir == NULL) { //内核线程
+        PF = PF_KERNEL;
+        mem_pool = &kernel_pool;
+        pool_size = kernel_pool.pool_size;
+        descs = k_block_descs;
+    } else { //用户进程
+        PF = PF_USER;
+        mem_pool = &user_pool;
+        pool_size = user_pool.pool_size;
+        descs = cur_thread->u_block_desc;
+    }
+
+    if (!(size > 0 && size < pool_size)) return NULL;
+
+    struct arena* a;
+    struct mem_block* b;
+
+    lock_acquire(&mem_pool->lock);
+
+    if (size > 1024) { //申请的内存超过1024，将整页分配出去
+        uint32_t page_cnt = DIV_ROUND_UP(size + sizeof(struct arena), PG_SIZE); //需要的页框数
+        a = malloc_page(PF, page_cnt);
+        
+        if (a != NULL) {
+            memset(a, 0, page_cnt * PG_SIZE);
+
+            // 内存块描述符表为空，large 为 true，cnt 表示需要的页框数
+            a->desc = NULL;
+            a->cnt = page_cnt;
+            a->large = true;
+
+            lock_release(&mem_pool->lock);
+            return (void*)(a + 1); //跨过元信息部分，返回 arena 中的内存池起始地址
+        } else {
+            lock_release(&mem_pool->lock);
+            return NULL;
+        }
+    } else { 
+        //找到适合的内存块大小
+        uint32_t desc_idx;
+        for (desc_idx = 0; desc_idx < DESC_CNT; desc_idx++) {
+            if (size <= descs[desc_idx].block_size) break;
+        }
+
+        // 如果没有可用的内存块，就创建新的 arena 并为它分配内存块
+        if (list_empty(&descs[desc_idx].free_list)) {
+            a = malloc_page(PF, 1);
+            if (a == NULL) {
+                lock_release(&mem_pool->lock);
+                return NULL;
+            }
+
+            memset(a, 0, PG_SIZE);
+            a->desc = &descs[desc_idx];
+            a->large = false;
+            a->cnt = descs[desc_idx].block_per_arena;
+
+            //将 arena 拆分为内存块，加入空闲内存块链表中
+            uint32_t block_idx;
+            enum intr_status old_status = intr_disable();
+            for (block_idx = 0; block_idx < descs[desc_idx].block_per_arena; block_idx++) {
+                b = arena2block(a, block_idx);
+                ASSERT(!elem_find(&a->desc->free_list, &b->free_elem));
+                list_append(&a->desc->free_list, &b->free_elem);
+            }
+
+            intr_set_status(old_status);
+        }
+
+        //分配内存块
+        b = elem2entry(struct mem_block, free_elem, list_pop(&descs[desc_idx].free_list)); //获取内存块地址
+        
+        memset(b, 0, descs[desc_idx].block_size);
+        a = block2arena(b); //获取内存块 b 所在的 arena 地址
+        a->cnt--;
+        
+        lock_release(&mem_pool->lock);
+        // console_put_int((uint32_t)b);
+        return (void*)b;
+    }
+
+
+}
+
 
 void mem_init(void) {
     put_str("Init memory start.\n");
     uint32_t total_memory = (*(uint32_t*) (0xb00));
     mem_pool_init(total_memory);
+    block_desc_init(k_block_descs);
     put_str("Init memory done.\n");
 }
 

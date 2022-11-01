@@ -76,6 +76,8 @@ struct task_struct {
    uint32_t* pgdir;//进程页表的虚拟地址，线程为NULL
    struct virtual_addr userprog_vaddr; //用户进程的虚拟地址池
 
+   struct mem_block_desc u_block_desc[DESC_CNT]; //用户内存块描述符数组
+
    uint32_t stack_magic;//栈的边界标记，用于检测栈溢出
 };
 

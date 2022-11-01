@@ -122,12 +122,13 @@ void create_user_vaddr_bitmap(struct task_struct* user_prog) {
 void process_execute(void* filename, char* name) {
     
     struct task_struct* thread = get_kernel_pages(1);
-   
+     
     init_thread(thread, name, default_prio);
     create_user_vaddr_bitmap(thread);
 
     thread_create(thread, start_process, filename);
     thread->pgdir = create_page_dir();
+    block_desc_init(thread->u_block_desc);
 
     enum intr_status old_status = intr_disable();
     ASSERT(!elem_find(&thread_all_list, &thread->all_list_tag));

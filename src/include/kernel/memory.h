@@ -2,6 +2,7 @@
 #define __KERNEL_MEMORY_H 
 #include <lib/kernel/stdint.h>
 #include <lib/kernel/bitmap.h>
+#include <kernel/list.h>
 
 // 存在标志
 # define PG_P_1 1
@@ -31,6 +32,21 @@ struct virtual_addr {
 
 extern struct pool kernel_pool, user_pool;
 
+
+// 内存块
+struct mem_block {
+    struct list_elem free_elem;
+};
+
+//内存块描述符
+struct mem_block_desc {
+    uint32_t block_size;         // 内存块大小
+    uint32_t block_per_arena;    //一个arena能够提供的内存块个数
+    struct list free_list;  //空闲 mem_block 链表，可以由多个 arena 提供内存块
+};
+
+#define DESC_CNT 7               //内存块描述符个数
+
 void mem_init(void);
 void* get_kernel_pages(uint32_t page_count);
 void* get_user_pages(uint32_t page_count);
@@ -42,6 +58,10 @@ uint32_t* pte_ptr(uint32_t vaddr);
 uint32_t* pde_ptr(uint32_t vaddr);
 
 uint32_t addr_v2p(uint32_t vaddr);
+
+void block_desc_init(struct mem_block_desc* desc_array);
+
+void* sys_malloc(uint32_t size);
 
 # endif
 
