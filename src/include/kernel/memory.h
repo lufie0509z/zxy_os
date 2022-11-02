@@ -19,8 +19,7 @@
  * 内存池类型标志.
  */ 
 enum pool_flags {
-    // 内核类型
-    PF_KERNEL = 1,
+    PF_KERNEL = 1,  // 内核类型
     PF_USER = 2
 };
 
@@ -42,7 +41,7 @@ struct mem_block {
 struct mem_block_desc {
     uint32_t block_size;         // 内存块大小
     uint32_t block_per_arena;    //一个arena能够提供的内存块个数
-    struct list free_list;  //空闲 mem_block 链表，可以由多个 arena 提供内存块
+    struct list free_list;       //空闲 mem_block 链表，可以由多个 arena 提供内存块
 };
 
 #define DESC_CNT 7               //内存块描述符个数
@@ -63,5 +62,9 @@ void block_desc_init(struct mem_block_desc* desc_array);
 
 void* sys_malloc(uint32_t size);
 
+void pfree(uint32_t pg_phy_addr);
+void mfree_page(enum pool_flags pf, void* _vaddr, uint32_t pg_cnt);
+
+void sys_free(void* ptr);
 # endif
 
