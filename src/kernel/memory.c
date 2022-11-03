@@ -370,7 +370,7 @@ static struct arena* block2arena(struct mem_block* b) {
 
 //申请 size 字节的内存
 void* sys_malloc(uint32_t size) {
-
+    
     enum pool_flags PF;
     struct pool* mem_pool;
     uint32_t pool_size;
@@ -379,11 +379,13 @@ void* sys_malloc(uint32_t size) {
 
     if (cur_thread->pgdir == NULL) { //内核线程
         PF = PF_KERNEL;
+        // console_put_str("kernel");
         mem_pool = &kernel_pool;
         pool_size = kernel_pool.pool_size;
         descs = k_block_descs;
     } else { //用户进程
         PF = PF_USER;
+        // console_put_str("user");
         mem_pool = &user_pool;
         pool_size = user_pool.pool_size;
         descs = cur_thread->u_block_desc;
