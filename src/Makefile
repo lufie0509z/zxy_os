@@ -4,7 +4,7 @@ AR = ar
 
 OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o debug.o string.o bitmap.o \
           memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o process.o \
-		  syscall.o syscall-init.o stdio.o
+		  syscall.o syscall-init.o stdio.o stdio-kernel.o ide.o
 
 CFLAGS = -Wall -fno-pie -O0 -g -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32
@@ -38,6 +38,8 @@ all: kernel.bin kernel.elf libkernel.a
 	gcc $(CFLAGS) -I./include -c -o syscall.o           user/syscall.c
 	gcc $(CFLAGS) -I./include -c -o syscall-init.o      user/syscall-init.c
 	gcc $(CFLAGS) -I./include -c -o stdio.o             lib/stdio.c
+	gcc $(CFLAGS) -I./include -c -o stdio-kernel.o      lib/kernel/stdio-kernel.c
+	gcc $(CFLAGS) -I./include -c -o ide.o               device/ide.c
 
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)

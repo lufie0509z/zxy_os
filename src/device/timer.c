@@ -1,18 +1,21 @@
-# include <kernel/io.h>
-# include <lib/kernel/print.h>
-# include <device/timer.h>
-# include<kernel/thread.h>
-# include<kernel/interrupt.h>
-# include <kernel/debug.h>
+#include <kernel/io.h>
+#include <lib/kernel/print.h>
+#include <device/timer.h>
+#include<kernel/thread.h>
+#include<kernel/interrupt.h>
+#include <kernel/debug.h>
+#include <kernel/global.h>
 
-# define IRQ0_FREQUENCY 100
-# define INPUT_FREQUENCY 1193180
-# define COUNTER0_VALUE INPUT_FREQUENCY / IRQ0_FREQUENCY
-# define COUNTER0_PORT 0x40
-# define COUNTER_MODE 3
-# define COUNTER0_NO 0
-# define READ_WRITE_LATCH 3
-# define PIT_CONTROL_PORT 0x43
+#define IRQ0_FREQUENCY 100
+#define INPUT_FREQUENCY 1193180
+#define COUNTER0_VALUE INPUT_FREQUENCY / IRQ0_FREQUENCY
+#define COUNTER0_PORT 0x40
+#define COUNTER_MODE 3
+#define COUNTER0_NO 0
+#define READ_WRITE_LATCH 3
+#define PIT_CONTROL_PORT 0x43
+
+#define mil_seconds_per_intr (1000 / IRQ0_FREQUENCY)  // 每毫秒发生多少次中断
 
 uint32_t ticks;//内核自中断开启以来总共的嘀嗒数
 
@@ -54,6 +57,21 @@ static void intr_timer_handler(void) {
     else cur_thread->ticks--;
 }
 
+// 以时钟嘀嗒数为单位进行休眠
+static void ticks_to_sleep(uint32_t sleep_ticks) {
+    uint32_t start_tick = ticks;
+    while (ticks - start_tick < sleep_ticks)
+    {
+        thread_yield();
+    }
+}
+
+// 以毫秒为单位休眠
+void mtime_sleep(uint32_t m_seconds) {
+    uint32_t sleep_ticks = DIV_ROUND_UP(m_seconds, mil_seconds_per_intr);
+    ASSERT(sleep_ticks > 0);
+    ticks_to_sleep(sleep_ticks);
+}
 
 /**
  * 初始化PIT 8253.

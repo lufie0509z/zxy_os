@@ -12,15 +12,26 @@
 #include <kernel/debug.h>
 #include <kernel/sync.h>
 
-struct task_struct* main_thread;//主线程的pcb
-struct list thread_ready_list;//就绪队列
+struct task_struct* main_thread;      // 主线程的pcb
+struct list thread_ready_list;        // 就绪队列
 struct list thread_all_list;
-static struct list_elem* thread_tag;//记录tag,用于将结点转换到pcb
+static struct list_elem* thread_tag;  // 记录tag,用于将结点转换到pcb
 
+struct task_struct* idle_thread;      // idle线程
 
 extern void switch_to(struct task_struct* cur, struct tasK_struct* next);
 
 struct lock pid_lock;  //pid 是唯一的，分配 pid 时必须互斥
+
+static void idle(void* arg UNUSED) {
+    while (1) {
+        thread_block(TASK_BLOCKED);
+        // 开中断，hlt用于让处理器停止执行指令，将处理器挂起
+        // 外部中断发生可唤醒处理器
+        asm volatile ("sti; hlt" : : : "memory");
+    }
+}
+
 
 // 获取当前线程的pcb
 struct task_struct* running_thread() {
@@ -128,6 +139,10 @@ void schedule(void) {
         //todo:线程被阻塞了
     }
 
+    if (list_empty(&thread_ready_list)) { // 如果就绪队列为空，就唤醒idle_thread
+        thread_unblock(idle_thread);
+    }
+
     //将就绪队列的第一个线程弹出上处理器
     ASSERT(!list_empty(&thread_ready_list));
     thread_tag = NULL;
@@ -152,6 +167,21 @@ void schedule(void) {
 
 }
 
+//线程让步
+void thread_yield(void) {
+    struct task_struct* cur = running_thread();
+    enum intr_status old_status = intr_disable(); 
+    ASSERT(!elem_find(&thread_ready_list, &cur->general_tag));
+
+    list_append(&thread_ready_list, &cur->general_tag);
+    cur->status = TASK_READY;
+
+    schedule();
+
+    intr_set_status(old_status);
+
+}
+
 //初始化线程环境
 void thread_init(void) {
     put_str("thread_init start\n");
@@ -163,6 +193,8 @@ void thread_init(void) {
     thread_tag = NULL;
     make_main_thread();
 
+    // 创建idle线程
+    idle_thread = thread_start("idle", 10, idle, NULL);
     put_str("thread_init done\n");
 }
 
@@ -176,6 +208,7 @@ void thread_block(enum task_status stat) {
     cur_thread->status = stat;
 
     schedule();
+
 
     //解除阻塞后才会继续执行
     intr_set_status(old_status);

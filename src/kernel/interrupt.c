@@ -169,8 +169,8 @@ static void pic_init(void) {
     // outb(0x21, 0xfe);
     // outb(0xA1, 0xff);
     // 打开时钟中断和键盘中断
-    outb(0x21, 0xfe);
-    outb(0xA1, 0xff);
+    outb(0x21, 0xf8); // 主片打开的中断有IRQ0时钟中断，IRQ1键盘中断和IRQ2从片级联中断
+    outb(0xA1, 0xbf); // 从片的IRQ14，硬盘中断信号
 
     put_str("pic_init done.\n");
 }

@@ -10,6 +10,7 @@
 #define va_arg(ap, t)   *((t*)(ap += 4))   
 #define va_end(ap)      ap = NULL
 
+
 // 将整型转换为字符串，也就是 integer to ascii 
 static void itoa(uint32_t value, char** buf_ptr_addr, uint8_t base) {
     uint32_t m = value % base;
