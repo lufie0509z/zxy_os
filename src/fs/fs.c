@@ -3,11 +3,15 @@
 #include <fs/inode.h>
 #include <fs/super_block.h>
 #include <device/ide.h>
+#include <kernel/list.h>
 #include <kernel/debug.h>
 #include <kernel/global.h>
 #include <kernel/string.h>
 #include <kernel/memory.h>
+#include <lib/kernel/bitmap.h>
 #include <lib/kernel/stdio-kernel.h>
+
+struct partition* cur_part;  // 默认分区
 
 // 为p分区创建文件系统，初始化元信息
 static void partition_format(struct partition* p) {
@@ -116,6 +120,51 @@ static void partition_format(struct partition* p) {
 
 }
 
+// 找到默认分区，然后将元信息读入内存
+static bool partition_mount(struct list_elem* pelem, int arg) {
+    char* part_name = (char*)arg;       // 将arg还原为字符指针
+    struct partition* p = elem2entry(struct partition, part_tag, pelem);  // 将列表成员还原为分区指针
+    
+    if (!strcmp(part_name, p->name)) {  // 找到了默认分区
+        cur_part = p;
+        struct disk* hd = p->my_disk;
+
+        // 将超级块信息读入内存
+        struct super_block* sb_buf = (struct super_block*)sys_malloc(SECTOR_SIZE);  // 超级块缓冲区
+
+        cur_part->sb = (struct super_block*)sys_malloc(sizeof(struct super_block));  // 在内存中创建cur_part的超级块
+        if (cur_part->sb == NULL) PANIC("memory allocation failed!!!!!!");
+        memset(sb_buf, 0, SECTOR_SIZE);
+
+        // 将超级块信息读入缓冲区
+        ide_read(hd, cur_part->start_lba + 1, sb_buf, 1);
+
+        // 将超级块信息从缓冲区中复制到内存中的分区超级块，并且舍去了填充数组
+        memcpy(cur_part->sb, sb_buf, sizeof(struct super_block));
+
+        // 将硬盘中的块位图信息读入内存
+        cur_part->block_bitmap.bits = (uint8_t*)sys_malloc(sb_buf->block_bitmap_secs * SECTOR_SIZE);
+        if (cur_part->block_bitmap.bits == NULL) PANIC("memory allocation failed!!!!!!"); // 物理内存可能不够
+        // 并不是真实的位图，最后一个扇区可能含有已经置1的无效位
+        cur_part->block_bitmap.btmp_bytes_len = sb_buf->block_bitmap_secs * SECTOR_SIZE;
+        ide_read(hd, sb_buf->block_bitmap_lba, cur_part->block_bitmap.bits, sb_buf->block_bitmap_secs);  
+
+        // 将硬盘中的i结点位图信息读入内存
+        cur_part->inode_map.bits = (uint8_t*)sys_malloc(sb_buf->inode_bitmap_secs * SECTOR_SIZE);
+        if (cur_part->inode_map.bits == NULL) PANIC("memory allocation failed!!!!!!");
+        cur_part->inode_map.btmp_bytes_len = sb_buf->inode_bitmap_secs * SECTOR_SIZE;
+        ide_read(hd, sb_buf->inode_bitmap_lba, cur_part->inode_map.bits, sb_buf->inode_bitmap_secs);
+
+        list_init(&cur_part->open_inodes); // 初始化分区的已打开i结点列表
+
+        printk("mount %s done!\n", p->name);
+
+        return true;
+    }
+    return false;
+}
+
+
 // 文件系统初始化，如果没有就对分区进行格式化并创建文件系统
 void filesys_init() {
     uint8_t channel_no = 0, dev_no = 0, partition_idx = 0;
@@ -164,5 +213,9 @@ void filesys_init() {
         channel_no++;
     }
     sys_free(sb_buf);
+
+    char default_part[8] = "sdb1"; // 默认挂载到的分区
+  
+    list_traversal(&partition_list, partition_mount, (int)default_part);
 }
 
