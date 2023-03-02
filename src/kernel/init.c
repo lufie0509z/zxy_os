@@ -8,7 +8,7 @@
 #include <device/ide.h>
 #include <kernel/tss.h>
 #include <kernel/init.h>
-
+#include <fs/fs.h>
 
 // extern int prog_a_pid, prog_b_pid;
 void init_all() {
@@ -25,4 +25,5 @@ void init_all() {
 
     intr_enable();    // 后面的ide_init需要打开中断
     ide_init();	      // 初始化硬盘
+    filesys_init();   // 初始化文件系统
 }
