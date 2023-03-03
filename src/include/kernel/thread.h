@@ -10,6 +10,7 @@
 typedef void thread_func(void*);
 typedef int16_t pid_t;
 
+#define MAX_FILES_OPEN_PER_PROC 8 // 每个进程最多打开文件的数量
 //进程的状态
 enum task_status {
     TASK_RUNNING,
@@ -69,6 +70,8 @@ struct task_struct {
    
    uint8_t ticks;//嘀嗒数
    uint32_t elapsed_ticks;//已经占用了的cpu嘀嗒数
+
+   int32_t fdtable[MAX_FILES_OPEN_PER_PROC];  //文件描述符数组
 
    struct list_elem general_tag;//一般队列中的节点
    struct list_elem all_list_tag;//线程队列中的节点
