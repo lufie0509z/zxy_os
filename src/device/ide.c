@@ -326,6 +326,9 @@ void ide_init() {
     printk("ide_init start.\n");
     uint8_t hd_cnt = *((uint8_t*)(0x475));  // 获取硬盘数量
     ASSERT(hd_cnt > 0);
+
+    list_init(&partition_list);
+
     channel_cnt = DIV_ROUND_UP(hd_cnt, 2);  // 根据硬盘数获取通道数量
     struct ide_channel* channel;
     uint8_t channel_no = 0;

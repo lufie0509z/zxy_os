@@ -2,6 +2,7 @@
 #define __FS_INODE_H
 #include <kernel/list.h>
 #include <kernel/global.h>
+#include <device/ide.h>
 
 // i结点结构体
 struct inode {
@@ -11,6 +12,12 @@ struct inode {
     bool write_deny;         // 写操作不能同时
 
     uint32_t i_sectors[13];  // 前12个是直接块指针，第13个存储的是一级间接块指针
-    struct list_elem inode_tag;  // i结点的标识，用于加入已打开的i结点列表
+    struct list_elem inode_tag;  // i结点的标识，用于加入已打开的i结点列表，inode缓存
+
 };
+void inode_sync(struct partition* p, struct inode* inode, void* io_buf);
+struct inode* inode_open(struct partition* p, uint32_t i_no);
+void inode_init(uint32_t i_no, struct inode* new_inode);
+void inode_close(struct inode* inode);
+
 #endif

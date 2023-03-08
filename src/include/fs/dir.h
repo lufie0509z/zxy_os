@@ -22,4 +22,15 @@ struct dir_entry
     enum file_types f_type;  // 文件类型
 };
 
+
+
+extern struct dir root_dir;
+
+void open_root_dir(struct partition* p);
+struct dir* dir_open(struct partition* p, uint32_t i_no);
+bool search_dir_entry(struct partition* p, struct dir* dir, const char* name, struct dir_entry* dir_e);
+void dir_close(struct dir* dir);
+void create_dir_entry (char* filename, uint32_t i_no, uint8_t f_type, struct dir_entry* d_en);
+bool sync_dir_entry(struct dir* parent_dir, struct dir_entry* p_de, void* io_buf);
+
 #endif
