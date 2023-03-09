@@ -400,9 +400,31 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
             dir_close(searched_record.parent_dir);
             break;
         // 剩下是打开文件相关
+        default:
+            file_open(inode_no, flags);
     }
 
     // fd是任务pcb->fd_table数组中的元素下标
     return fd;
 }
 
+// 输入pcb中的文件描述符， 返回全局文件表的下标
+static uint32_t fd_local_to_global(uint32_t local_fd) {
+   struct task_struct* cur = running_thread();
+   int32_t global_fd = cur->fdtable[local_fd];
+
+   ASSERT(global_fd >= 0 && global_fd < MAX_FILES_OPEN);
+   return (uint32_t)global_fd;
+}
+
+// 关闭文件文件描述符指向的文件
+int32_t sys_close(uint32_t fd) {
+   int32_t ret = -1; // 默认关闭失败
+   if (fd > 2) {
+      uint32_t global_fd = fd_local_to_global(fd);
+      ret = file_close(&file_table[global_fd]);
+      running_thread()->fdtable[fd] = -1;  // 使该文件描述符位可用
+      printk("fd: %d is closing\n", fd);
+   }
+   return ret;
+}

@@ -8,6 +8,7 @@
 #include <kernel/thread.h>
 #include <kernel/memory.h>
 #include <kernel/string.h>
+#include <kernel/interrupt.h>
 #include <lib/kernel/bitmap.h>
 #include <lib/kernel/stdio-kernel.h>
 
@@ -176,3 +177,45 @@ int32_t file_create(struct dir* parent_dir, char* filename, uint8_t flag) {
         return -1;
 }
 
+// 打开i结点编号为 i_no 的文件，成功返回其文件描述符号
+int32_t file_open(uint32_t i_no, uint8_t flags) {
+    int32_t fd_idx = get_free_slot_in_global();
+    if (fd_idx == -1) {
+        printk("exceed max open files\n");
+        return -1;
+    }
+
+    file_table[fd_idx].fd_inode = inode_open(cur_part, i_no);
+    file_table[fd_idx].fd_pos = 0;  // 每次打开文件时，都需要将该值置为0，使其指向文件开头
+    file_table[fd_idx].fd_flag = flags;
+
+    bool* write_deny = &file_table[fd_idx].fd_inode->write_deny;
+
+    // 如果写文件
+    if (flags & O_WRONLY || flags & O_RDWR) {
+        enum intr_status old_status = intr_disable();
+        if (!(*write_deny)) {
+            // 没有别的进程在写文件，
+            *write_deny = true;
+            intr_set_status(old_status);
+        } else {
+            intr_set_status(old_status);
+            printk("the file is written by other threaf, please try again later\n");
+            return -1;
+        }
+    }
+
+    return pcb_fd_install(fd_idx);
+     
+} 
+
+
+// 关闭文件
+int32_t file_close(struct file* f) {
+    if (f == NULL) return -1;
+
+    f->fd_inode->write_deny = false;
+    inode_close(f->fd_inode);
+    f->fd_inode = NULL; // 使文件结构可用
+    return 0;
+}

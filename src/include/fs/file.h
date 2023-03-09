@@ -36,5 +36,7 @@ void bitmap_sync(struct partition* p, uint32_t bit_idx, uint8_t bitmap_type);
 
 int32_t file_create(struct dir* parent_dir, char* filename, uint8_t flag);
 
+int32_t file_open(uint32_t i_no, uint8_t flags);
+int32_t file_close(struct file* f);
 #endif
 
