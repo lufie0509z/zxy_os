@@ -1,6 +1,7 @@
 #include <lib/stdio.h>
 #include <lib/kernel/stdint.h>
 #include <kernel/global.h>
+#include <fs/fs.h>
 
 #define va_start(ap, v) ap = (va_list)&v  // 将 ap 指向栈中可变参数中的第一个参数v
 /**
@@ -93,6 +94,6 @@ uint32_t printf(const char* format, ...) {
     char buf[1024] = {0};
     vsprintf(buf, format, args);
     va_end(args);
-    return write(buf);
+    return write(1, buf, strlen(buf));
 }
 

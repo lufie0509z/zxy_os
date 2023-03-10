@@ -8,6 +8,7 @@
 #include <kernel/thread.h>
 #include <kernel/memory.h>
 #include <kernel/string.h>
+#include <kernel/debug.h>
 #include <kernel/interrupt.h>
 #include <lib/kernel/bitmap.h>
 #include <lib/kernel/stdio-kernel.h>
@@ -64,7 +65,7 @@ int32_t block_bitmap_alloc(struct partition* p) {
     int32_t bit_idx = bitmap_scan(&p->block_bitmap, 1);
     if (bit_idx == -1) return -1;
     bitmap_set(&p->block_bitmap, bit_idx, 1);
-    return (p->sb->block_bitmap_lba + bit_idx); // 返回扇区地址
+    return (p->sb->data_start_lba + bit_idx); // 返回扇区地址
 }
 
 // 将内存位图中bit_idx所在的512字节信息同步到磁盘中
@@ -177,8 +178,9 @@ int32_t file_create(struct dir* parent_dir, char* filename, uint8_t flag) {
         return -1;
 }
 
-// 打开i结点编号为 i_no 的文件，成功返回其文件描述符号
+// 打开结点编号为 i_no 的文件，成功返回其文件描述符号
 int32_t file_open(uint32_t i_no, uint8_t flags) {
+
     int32_t fd_idx = get_free_slot_in_global();
     if (fd_idx == -1) {
         printk("exceed max open files\n");
@@ -219,3 +221,194 @@ int32_t file_close(struct file* f) {
     f->fd_inode = NULL; // 使文件结构可用
     return 0;
 }
+
+// 将buf中cnt个字节写入文件file，成功返回写入文件的字节数
+int32_t file_write(struct file* file, const void* buf, uint32_t cnt) {
+    if ((file->fd_inode->i_size + cnt) > (BLOCK_SIZE * (12 + 128))) {
+        printk("exceed max file_size 71680 bytes, write file failed\n");
+        return -1;
+    }
+
+    uint8_t* io_buf = (uint8_t*)sys_malloc(BLOCK_SIZE);    // 磁盘的读写操作都是以扇区为单位的
+    if (io_buf == NULL) {
+        printk("file_write: sys_malloc for io_buf failed\n");
+        return -1;
+    }
+
+    uint32_t* all_blocks = (uint32_t*)sys_malloc(140 * 4);  // 用来记录文件140个数据块的块地址
+    if (all_blocks == NULL) {
+        printk("file_write: sys_malloc for all_blocks failed\n");
+        return -1;
+    }
+
+    const uint8_t* src = (const uint8_t*)buf; //指向buf中待写入的数据
+    uint32_t bytes_written = 0;     // 已经写入数据的字节大小
+    uint32_t size_left = cnt;       // 剩余待写入的数据大小
+    int32_t block_lba = -1;         // 操作的块地址
+    uint32_t block_bitmap_idx = 0;  // 记录块在block_bitmap中的索引，作为参数传递给bitmap_sync
+    uint32_t sec_idx;               // 扇区索引
+    uint32_t sec_lba;               // 扇区地址
+    uint32_t sec_off_bytes;         // 扇区内的字节偏移
+    uint32_t sec_left_bytes;        // 扇区内剩余字节大小
+    uint32_t chunk_size;            // 每次写入硬盘的数据块大小
+    uint32_t block_idx;             // 块索引
+    int32_t indirect_block_table;   // 一级间接表的地址
+
+    /* 判断文件是不是第一次写，是的话就为他分配一个块
+     * 每次分配块都需要同步 */
+    if (file->fd_inode->i_sectors[0] == 0) {
+
+        block_lba = block_bitmap_alloc(cur_part);
+        
+        if (block_lba == -1) {
+            printk("file_write: block_bitmap_alloc failed\n");
+            return -1;
+        }
+        file->fd_inode->i_sectors[0] = block_lba;
+
+        // 每分配一个数据块就需要同步到磁盘中
+        block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+
+        bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP);
+    }
+
+    // 写文件前，文件已经被占用的块数
+    uint32_t file_has_used_blocks = file->fd_inode->i_size / BLOCK_SIZE + 1;
+
+    // 写文件后，文件占用的块数
+    uint32_t file_will_use_blocks = (file->fd_inode->i_size + cnt) / BLOCK_SIZE + 1;
+    ASSERT(file_will_use_blocks <= 140);
+
+    uint32_t add_blocks = file_will_use_blocks - file_has_used_blocks;
+
+    // 将文件的数据块扇区地址存入all_blocks中
+    if (add_blocks == 0) {
+        if (file_has_used_blocks <= 12) {
+            block_idx = file_has_used_blocks - 1; // 指向最后一个数据块
+            all_blocks[block_idx] = file->fd_inode->i_sectors[block_idx];
+        } else {
+            ASSERT(file->fd_inode->i_sectors[12] != 0);
+
+            indirect_block_table = file->fd_inode->i_sectors[12]; // 间接块的扇区地址
+            ide_read(cur_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+        }
+    } else {
+        if (file_will_use_blocks <= 12) {
+            // 将原有扇区中包含剩余空间的(可继续用的)块地址存到all_blocks
+            block_idx = file_has_used_blocks - 1;
+            ASSERT(file->fd_inode->i_sectors[block_idx] != 0);
+            all_blocks[block_idx] = file->fd_inode->i_sectors[block_idx];
+
+            // 再将未来要用的扇区分配好并写入all_blocks
+            block_idx = file_has_used_blocks;
+            while (block_idx < file_will_use_blocks) {
+                block_lba = block_bitmap_alloc(cur_part);
+                if (block_lba == -1) {
+                    printk("file_write: block_bitmap_alloc for situation 1 failed\n");
+                    return -1;
+                }
+                ASSERT(file->fd_inode->i_sectors[block_idx] == 0);
+                file->fd_inode->i_sectors[block_idx] = all_blocks[block_idx] = block_lba;
+
+                // 分配扇区时一定要同步到硬盘中
+                block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+                bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP);
+
+                block_idx++;
+            }
+
+        } else if (file_has_used_blocks <= 12 && file_will_use_blocks > 12) {
+            block_idx = file_has_used_blocks - 1;
+            ASSERT(file->fd_inode->i_sectors[block_idx] != 0);
+            all_blocks[block_idx] = file->fd_inode->i_sectors[block_idx];  
+
+            // 创建一级间接表
+            block_lba = block_bitmap_alloc(cur_part);
+            if (block_lba == -1) {
+                printk("file_write: block_bitmap_alloc for situation 2 failed\n");
+                return -1;
+            }
+
+            ASSERT(file->fd_inode->i_sectors[12] == 0);
+            // 分配一级间接索引表
+            indirect_block_table = file->fd_inode->i_sectors[12] = block_lba;
+
+            while (block_idx < file_will_use_blocks) {
+                block_lba = block_bitmap_alloc(cur_part);
+                if (block_lba == -1) {
+                    printk("file_write: block_bitmap_alloc for situation 1 failed\n");
+                    return -1;
+                }
+                
+                if (block_idx < 12) {
+                    // 直接块
+                    ASSERT(file->fd_inode->i_sectors[block_idx] == 0);
+                    file->fd_inode->i_sectors[block_idx] = all_blocks[block_idx] = block_lba;
+                } else {
+                    // 间接块写入先all_blocks数组中，分配完成后一次性同步到磁盘中
+                    all_blocks[block_idx] = block_lba;
+                }
+
+                // 同步
+                block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+                bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP);
+
+                block_idx++;
+            }
+            // 将一级间接索引表直接写入硬盘
+            ide_write(cur_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+        } else {
+            ASSERT(file->fd_inode->i_sectors[12] != 0);
+            indirect_block_table = file->fd_inode->i_sectors[12];
+
+            // 获取一级间接表
+            ide_read(cur_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+
+            block_idx = file_has_used_blocks;
+            while (block_idx < file_will_use_blocks) {
+                block_lba = block_bitmap_alloc(cur_part);
+                if (block_lba = -1) {
+                    printk("file_write: block_bitmap_alloc for situation 3 failed\n");
+                    return -1;
+                }
+                all_blocks[block_idx++] = block_lba;
+
+                block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+                bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP);
+            }
+            ide_write(cur_part->my_disk, indirect_block_table, all_blocks + 12, 1);
+        }
+    }
+
+    bool first_write_block = true;  // 包含剩余空间的(可继续用的)的扇区
+    file->fd_pos = file->fd_inode->i_size - 1; // fd_pose置为文件大小-1
+    while (bytes_written < cnt) {
+        memset(io_buf, 0, BLOCK_SIZE);
+        sec_idx = file->fd_inode->i_size / BLOCK_SIZE;
+        sec_lba = all_blocks[sec_idx];
+        sec_off_bytes = file->fd_inode->i_size % BLOCK_SIZE;
+        sec_left_bytes = BLOCK_SIZE - sec_off_bytes;
+
+        // 本次写文件的字节大小
+        chunk_size =(size_left < sec_left_bytes) ? size_left : sec_left_bytes;
+        if (first_write_block) {
+            ide_read(cur_part->my_disk, sec_lba, io_buf, 1);
+            first_write_block = false;
+        }
+        memcpy(io_buf + sec_off_bytes, src, chunk_size);
+        printk("file write at lba 0x%x\n", sec_lba); 
+
+        src += chunk_size;
+        file->fd_inode->i_size += chunk_size;
+        file->fd_pos += chunk_size;
+        bytes_written += chunk_size;
+        size_left -= chunk_size;
+    }
+
+    inode_sync(cur_part, file->fd_inode, io_buf);
+    sys_free(all_blocks);
+    sys_free(io_buf);
+    return bytes_written;
+}
+
+

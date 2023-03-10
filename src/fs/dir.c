@@ -66,6 +66,7 @@ bool search_dir_entry(struct partition* p, struct dir* dir, const char* name, st
         uint32_t dir_entry_idx = 0;
         
         while(dir_entry_idx < dir_entry_cnt) {
+            // printk("%s %s\n", p_de->filename, name);
             if (!strcmp(name, p_de->filename)) { // 找到了
                 memcpy(dir_e, p_de, dir_entry_size);
                 sys_free(buf);

@@ -35,6 +35,8 @@ struct path_search_record {
 void filesys_init();
 int32_t path_depth_cnt (char* pathname);
 
-int32_t sys_open(const char* pathname, uint8_t flags);
+int32_t sys_open(const char* fpathname, uint8_t flags);
 int32_t sys_close(uint32_t fd);
+
+int32_t sys_write(int32_t fd, void* buf, uint32_t cnt);
 #endif

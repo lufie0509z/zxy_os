@@ -8,6 +8,7 @@
 #include <kernel/memory.h>
 #include <kernel/thread.h>
 #include <kernel/interrupt.h>
+#include <lib/kernel/stdio-kernel.h>
 
 // 存储i结点在磁盘扇区中的位置
 struct inode_pos {

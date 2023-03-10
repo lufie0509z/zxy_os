@@ -4,6 +4,7 @@
 #include <fs/inode.h>
 #include <fs/super_block.h>
 #include <device/ide.h>
+#include <device/console.h>
 #include <kernel/list.h>
 #include <kernel/debug.h>
 #include <kernel/global.h>
@@ -198,12 +199,12 @@ void filesys_init() {
                     memset(sb_buf, 0, SECTOR_SIZE);
                     ide_read(hd, p->start_lba + 1, sb_buf, 1);  // 将超级块信息读入到缓存区中
 
-                  //   if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
-                  //       printk("%s has filesystem\n", p->name);
-                  //   } else {                                    // 初始化文件系统
+                    // if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
+                    //     printk("%s has filesystem\n", p->name);
+                    // } else {                                    // 初始化文件系统
                         printk("formatting %s's partition%s\n", hd->name, p->name);
                         partition_format(p);
-                  //   }
+                    // }
 
                 }
                 partition_idx++;
@@ -358,6 +359,10 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
 
     // 检查文件是否存在
     int32_t inode_no = search_file((char*)pathname, &searched_record);
+    // printk("%d\n", inode_no);
+    // printk("%s\n", &searched_record.searched_path);
+    // printk("%d\n", searched_record.parent_dir->inode->i_size / sizeof(struct dir_entry));
+
     bool found = inode_no != -1 ? true : false;
 
     if (searched_record.f_type == FT_DIR) {
@@ -376,7 +381,7 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
     }
 
     // 若是在最后一个路径上没找到,并且并不是要创建文件,直接返回-1
-    if (!found && !(flags && O_CREATE)) {
+    if (!found && !(flags & O_CREATE)) {
         printk("in path %s, file %s is't exist\n", searched_record.searched_path,
                (strrchr(searched_record.searched_path, '/') + 1));
         /* 
@@ -387,7 +392,7 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
          */
         dir_close(searched_record.parent_dir);
         return -1;
-    } else if (found && flags && O_CREATE) { // 需要创建的文件已存在
+    } else if (found && flags & O_CREATE) { // 需要创建的文件已存在
         printk("%s has already exist!\n", pathname);
         dir_close(searched_record.parent_dir);
         return -1;
@@ -401,7 +406,8 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
             break;
         // 剩下是打开文件相关
         default:
-            file_open(inode_no, flags);
+            fd = file_open(inode_no, flags);
+
     }
 
     // fd是任务pcb->fd_table数组中的元素下标
@@ -412,6 +418,7 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
 static uint32_t fd_local_to_global(uint32_t local_fd) {
    struct task_struct* cur = running_thread();
    int32_t global_fd = cur->fdtable[local_fd];
+//    printk("fd_local_to_global %d %d\n", local_fd, global_fd);
 
    ASSERT(global_fd >= 0 && global_fd < MAX_FILES_OPEN);
    return (uint32_t)global_fd;
@@ -427,4 +434,25 @@ int32_t sys_close(uint32_t fd) {
       printk("fd: %d is closing\n", fd);
    }
    return ret;
+}
+
+// 往文件描述符所在文件写入cnt个字节
+int32_t sys_write(int32_t fd, void* buf, uint32_t cnt) {
+    if (fd == std_out) { // 标准输出
+        char tmp[1024] = {0};
+        memcpy(tmp, buf, cnt);
+        console_put_str(tmp);
+        return cnt;
+    }
+
+    uint32_t global_fd = fd_local_to_global(fd); // 文件表中的下标
+
+    struct file* f = &file_table[global_fd];
+
+    if (f->fd_flag & O_WRONLY || f->fd_flag & O_RDWR) {
+        return file_write(f, buf, cnt);
+    } else {
+        console_put_str("sys_write: not allowed to write file without flag O_RDWR or O_WRONLY\n");
+        return -1;
+    }
 }

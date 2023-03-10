@@ -13,6 +13,7 @@
 #include <user/syscall-init.h>
 #include <lib/stdio.h>
 #include <fs/fs.h>
+#include <fs/file.h>
 
 void k_thread_a(void*);
 void k_thread_b(void*);
@@ -23,13 +24,20 @@ int main(void) {
    put_str("I am kernel\n");
    init_all();
    // intr_enable();
+  
    process_execute(u_prog_a, "u_prog_a");
    process_execute(u_prog_b, "u_prog_b");
    thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
    thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
-   uint32_t fd = sys_open("/file1", O_CREATE);
-   printf("fd: %d\n", fd);
-   sys_close(fd);
+   uint32_t fd1 = sys_open("/file1", O_CREATE);
+  
+   uint32_t fd2 = sys_open("/file1", O_RDWR);
+   printf("fd1: %d  fd2: %d\n", fd1, fd2);
+   sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
+   
+   sys_close(fd1);
+   sys_close(fd2);
+
    while(1);
    return 0;
 }

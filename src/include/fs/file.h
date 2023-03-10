@@ -38,5 +38,6 @@ int32_t file_create(struct dir* parent_dir, char* filename, uint8_t flag);
 
 int32_t file_open(uint32_t i_no, uint8_t flags);
 int32_t file_close(struct file* f);
+int32_t file_write(struct file* file, const void* buf, uint32_t cnt);
 #endif
 

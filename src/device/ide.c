@@ -173,6 +173,8 @@ void ide_read(struct disk* hd, uint32_t lba, void* buf, uint32_t sec_cnt) {
 
 // 将buf中的sec_cnt个扇区写到硬盘
 void ide_write(struct disk* hd, uint32_t lba, void* buf, uint32_t sec_cnt) {
+   
+    // printk("%d\n", lba);
     ASSERT(lba <= max_lba);
     ASSERT(sec_cnt > 0);
 
