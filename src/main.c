@@ -48,26 +48,28 @@ int main(void) {
    int read_bytes;
    
    char buf[64] = {0};
-   read_bytes = sys_read(fd3, buf, 36);
+   read_bytes = sys_read(fd3, buf, 24);
    // ide_read(cur_part->my_disk, 0x6ac, buf, 1);
    printf("1_ read %d bytes:\n%s", read_bytes, buf);
 
    memset(buf, 0, 64);
-   read_bytes = sys_read(fd3, buf, 36);
+   read_bytes = sys_read(fd3, buf, 12);
    printf("2_ read %d bytes:\n%s", read_bytes, buf);
 
    memset(buf, 0, 64);
    read_bytes = sys_read(fd3, buf, 6);
    printf("3_ read %d bytes:\n%s", read_bytes, buf);
 
-   printf("________  close file1 and reopen  ________\n");
-   sys_close(fd3);
-   uint32_t fd4 = sys_open("/file1", O_RDWR);
+   // printf("________  close file1 and reopen  ________\n");
+   // sys_close(fd3);
+   // uint32_t fd4 = sys_open("/file1", O_RDWR);
+   printf("________ SEEK_SET 0 ________\n");
    memset(buf, 0, 64);
-   read_bytes = sys_read(fd4, buf, 24);
+   sys_sleek(fd3, 0, SEEK_SET);
+   read_bytes = sys_read(fd3, buf, 24);
    printf("4_ read %d bytes:\n%s", read_bytes, buf);
 
-   sys_close(fd4);
+   sys_close(fd3);
 
    // sys_close(fd1);
 

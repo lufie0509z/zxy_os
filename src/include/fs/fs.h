@@ -24,6 +24,12 @@ enum oflags {
     O_CREATE = 4   // 创建文件，可以利用位操作复合参数/反推标识符
 };
 
+enum whence {
+    SEEK_SET = 1,  // 文件开始处
+    SEEK_CUR,      // 当前读写位置
+    SEEK_END       // 文件最后一个字节的下一个字节
+};
+
 extern struct partition* cur_part;
 
 struct path_search_record {
@@ -40,4 +46,6 @@ int32_t sys_close(int32_t fd);
 
 int32_t sys_write(int32_t fd, const void* buf, uint32_t cnt);
 int32_t sys_read(int32_t fd, void* buf, uint32_t cnt);
+
+int32_t sys_sleek(int32_t fd, int32_t offset, uint8_t whence);
 #endif

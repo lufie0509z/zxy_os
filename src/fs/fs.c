@@ -466,3 +466,34 @@ int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
     uint32_t global_fd = fd_local_to_global(fd);
     return file_read(&file_table[global_fd], buf, cnt);
 }
+
+
+// 重置文件读写操作的偏移指针，错误时返回-1
+int32_t sys_sleek(int32_t fd, int32_t offset, uint8_t whence) {
+    ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
+    ASSERT(whence > 0 && whence < 4);
+
+    uint32_t global_fd = fd_local_to_global(fd);
+    struct file* f = &file_table[global_fd];
+    
+    int32_t new_pos;
+    int32_t file_size = f->fd_inode->i_size;
+
+    switch (whence) {
+        case SEEK_SET:
+            new_pos = offset;
+            break;
+        case SEEK_CUR:
+            new_pos = offset + (int32_t)f->fd_pos;
+            break;
+        case SEEK_END:
+            new_pos = file_size + offset;
+            break;
+    }
+
+    if (new_pos < 0 || new_pos > (file_size - 1)) return -1;
+
+    f->fd_pos = new_pos;
+    return f->fd_pos;
+    
+}
