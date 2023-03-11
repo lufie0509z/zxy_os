@@ -53,18 +53,18 @@ void inode_sync(struct partition* p, struct inode* inode, void* io_buf) {
 
     pure_inde.i_open_cnt = 0;               // 在内存中被打开的次数
     pure_inde.write_deny = false;           // 保证下次硬盘读出时可写
-    pure_inde.inode_tag.next = pure_inde.inode_tag.prev = NULL; // 用于加入已打开i结点等列表
+    pure_inde.inode_tag.prev = pure_inde.inode_tag.next = NULL; // 用于加入已打开i结点等列表
 
     // 硬盘读写是以扇区为单位的，读出i结点所在硬盘后仅修改i结点信息，再写入硬盘中
     char* inode_buf = (char*)io_buf;        // 此缓冲区用于拼接同步的i结点数据
 
     if (inode_pos.two_secs) {
        ide_read(p->my_disk, inode_pos.sec_lba, inode_buf, 2);
-       memcpy((inode + inode_pos.off_size), &pure_inde, sizeof(struct inode)); // 修改i结点相关的信息
+       memcpy((inode_buf + inode_pos.off_size), &pure_inde, sizeof(struct inode)); // 修改i结点相关的信息
        ide_write(p->my_disk, inode_pos.sec_lba, inode_buf, 2);
     } else {
        ide_read(p->my_disk, inode_pos.sec_lba, inode_buf, 1);
-       memcpy((inode + inode_pos.off_size), &pure_inde, sizeof(struct inode));
+       memcpy((inode_buf + inode_pos.off_size), &pure_inde, sizeof(struct inode));
        ide_write(p->my_disk, inode_pos.sec_lba, inode_buf, 1);
    }
 }
@@ -119,6 +119,8 @@ struct inode* inode_open(struct partition* p, uint32_t i_no)
 
     return inode_found;
 }
+
+
 
 // 减少i结点打开次数，如果为0则关闭
 void inode_close(struct inode* inode) {

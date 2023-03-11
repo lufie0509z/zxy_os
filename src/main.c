@@ -9,6 +9,7 @@
 #include <user/process.h>
 #include <kernel/global.h>
 #include <kernel/memory.h>
+#include <kernel/string.h>
 #include <user/syscall.h>
 #include <user/syscall-init.h>
 #include <lib/stdio.h>
@@ -29,14 +30,46 @@ int main(void) {
    process_execute(u_prog_b, "u_prog_b");
    thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
    thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
-   uint32_t fd1 = sys_open("/file1", O_CREATE);
-  
-   uint32_t fd2 = sys_open("/file1", O_RDWR);
-   printf("fd1: %d  fd2: %d\n", fd1, fd2);
-   sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
    
+   
+   uint32_t fd1 = sys_open("/file1", O_CREATE);
    sys_close(fd1);
+
+   uint32_t fd2 = sys_open("/file1", O_RDWR);
+
+   // printf("open /file1, fd:%d\n", fd2); 
+   sys_write(fd2, "hello,zhang\n", 12); // 写文件 fd2!!!
+   sys_write(fd2, "zxyzxyzxyzxy", 12); // 写文件 fd2!!!
+   sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
    sys_close(fd2);
+
+   uint32_t fd3 = sys_open("/file1", O_RDWR);
+
+   int read_bytes;
+   
+   char buf[64] = {0};
+   read_bytes = sys_read(fd3, buf, 36);
+   // ide_read(cur_part->my_disk, 0x6ac, buf, 1);
+   printf("1_ read %d bytes:\n%s", read_bytes, buf);
+
+   memset(buf, 0, 64);
+   read_bytes = sys_read(fd3, buf, 36);
+   printf("2_ read %d bytes:\n%s", read_bytes, buf);
+
+   memset(buf, 0, 64);
+   read_bytes = sys_read(fd3, buf, 6);
+   printf("3_ read %d bytes:\n%s", read_bytes, buf);
+
+   printf("________  close file1 and reopen  ________\n");
+   sys_close(fd3);
+   uint32_t fd4 = sys_open("/file1", O_RDWR);
+   memset(buf, 0, 64);
+   read_bytes = sys_read(fd4, buf, 24);
+   printf("4_ read %d bytes:\n%s", read_bytes, buf);
+
+   sys_close(fd4);
+
+   // sys_close(fd1);
 
    while(1);
    return 0;

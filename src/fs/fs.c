@@ -10,6 +10,7 @@
 #include <kernel/global.h>
 #include <kernel/string.h>
 #include <kernel/memory.h>
+#include <kernel/interrupt.h>
 #include <lib/kernel/bitmap.h>
 #include <lib/kernel/stdio-kernel.h>
 
@@ -425,7 +426,7 @@ static uint32_t fd_local_to_global(uint32_t local_fd) {
 }
 
 // 关闭文件文件描述符指向的文件
-int32_t sys_close(uint32_t fd) {
+int32_t sys_close(int32_t fd) {
    int32_t ret = -1; // 默认关闭失败
    if (fd > 2) {
       uint32_t global_fd = fd_local_to_global(fd);
@@ -437,7 +438,7 @@ int32_t sys_close(uint32_t fd) {
 }
 
 // 往文件描述符所在文件写入cnt个字节
-int32_t sys_write(int32_t fd, void* buf, uint32_t cnt) {
+int32_t sys_write(int32_t fd, const void* buf, uint32_t cnt) {
     if (fd == std_out) { // 标准输出
         char tmp[1024] = {0};
         memcpy(tmp, buf, cnt);
@@ -455,4 +456,13 @@ int32_t sys_write(int32_t fd, void* buf, uint32_t cnt) {
         console_put_str("sys_write: not allowed to write file without flag O_RDWR or O_WRONLY\n");
         return -1;
     }
+}
+
+
+int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
+    ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
+    ASSERT(buf != NULL);
+
+    uint32_t global_fd = fd_local_to_global(fd);
+    return file_read(&file_table[global_fd], buf, cnt);
 }
