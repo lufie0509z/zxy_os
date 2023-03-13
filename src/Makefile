@@ -4,7 +4,7 @@ AR = ar
 
 OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o debug.o string.o bitmap.o \
           memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o process.o \
-		  syscall.o syscall-init.o stdio.o stdio-kernel.o ide.o dir.o file.o inode.o fs.o 
+		  syscall.o syscall-init.o stdio.o stdio-kernel.o ide.o dir.o inode.o file.o fs.o 
 
 CFLAGS = -Wall -fno-pie -O0 -g -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32

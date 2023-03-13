@@ -73,6 +73,8 @@ int main(void) {
 
    // sys_close(fd1);
 
+   printf("/file1 delete %s!\n", sys_unlink("/file1") == 0 ? "done" : "fail");
+
    while(1);
    return 0;
 }

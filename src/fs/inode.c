@@ -1,3 +1,5 @@
+#include <fs/fs.h>
+#include <fs/file.h>
 #include <fs/inode.h>
 #include <fs/super_block.h>
 #include <device/ide.h>
@@ -138,6 +140,83 @@ void inode_close(struct inode* inode) {
        cur->pgdir = cur_pgdir_tmp;
     }
     intr_set_status(old_status);
+}
+
+
+// 将硬盘上i结点的数据清空
+void inode_delete(struct partition* p, uint32_t i_no, void* io_buf) {
+   ASSERT(i_no < 4096);
+   struct inode_pos i_pos;
+
+   locate_inode(cur_part, i_no, &i_pos);
+
+   ASSERT(i_pos.sec_lba <= p->start_lba + p->sec_cnt);
+
+   char* inode_buf = (char*)io_buf;
+   if (i_pos.two_secs) {
+      ide_read(cur_part->my_disk, i_pos.sec_lba, inode_buf, 2);
+      memset(inode_buf + i_pos.off_size, 0, sizeof(struct inode));
+      ide_write(cur_part->my_disk, i_pos.sec_lba, inode_buf, 2);
+   } else {
+      ide_read(cur_part->my_disk, i_pos.sec_lba, inode_buf, 1);
+      memset(inode_buf + i_pos.off_size, 0, sizeof(struct inode));
+      ide_write(cur_part->my_disk, i_pos.sec_lba, inode_buf, 1);
+   }
+}
+
+// 回收i结点，包括它本身和占用了的数据块
+void inode_release(struct partition* p, uint32_t i_no) {
+   struct inode* inode_to_del = inode_open(p, i_no);
+   ASSERT(inode_to_del->i_no == i_no);
+
+   // 回收i结点占用的数据块
+   uint8_t block_idx = 0, block_cnt = 12;
+   uint32_t block_bitmap_idx;
+   uint32_t all_blocks[140] = {0};
+
+   while (block_idx < 12) {
+      all_blocks[block_idx] = inode_to_del->i_sectors[block_idx];
+      block_idx++;
+   }
+
+   if (inode_to_del->i_sectors[12] != 0) {
+      // 一级块存在，将间接块地址收集到all_blocks数组中
+      ide_read(p->my_disk, inode_to_del->i_sectors[12], all_blocks + 12, 1);
+      block_cnt = 140;
+
+      // 释放一级间接索引表本身的扇区地址
+      block_bitmap_idx = inode_to_del->i_sectors[12] - p->sb->data_start_lba;
+      ASSERT (block_bitmap_idx > 0);
+      bitmap_set(&p->block_bitmap, block_bitmap_idx, 0);
+      bitmap_sync(p, block_bitmap_idx, BLOCK_BITMAP);
+   }
+
+   /* 回收数据块占用的扇区
+    * 普通文件数据是连续存储的不存在中间某个地址为空的情况
+    * 目录文件会存在中间某个地址为空的情况 */
+   block_idx = 0;
+   while (block_idx < 139) {
+      if (all_blocks[block_idx] != 0) {
+         block_bitmap_idx = all_blocks[block_idx] - p->sb->data_start_lba;
+         ASSERT(block_bitmap_idx > 0);
+         bitmap_set(&p->block_bitmap, block_bitmap_idx, 0);
+         bitmap_sync(p, block_bitmap_idx, BLOCK_BITMAP);
+      }
+      block_idx++;
+   }
+
+   // 回收占用的inode数据本身
+   bitmap_set(&p->inode_map, i_no, 0);
+
+   bitmap_sync(p, i_no, INODE_BITMAP);
+
+   // 硬盘数据并不需要清0，下次使用时直接覆盖即可
+   void* io_buf = sys_malloc(1024);
+   inode_delete(p, i_no, io_buf);
+   sys_free(io_buf);
+
+   inode_close(inode_to_del);
+
 }
 
 // 初始化i结点
