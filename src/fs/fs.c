@@ -303,8 +303,6 @@ static int32_t search_file(const char* pathname, struct path_search_record* sear
         strcat(searched_record->searched_path, "/");
         strcat(searched_record->searched_path, name); // 记录下已经搜寻过的路径
 
-        
-
         if(search_dir_entry(cur_part, parent_dir, name, &dir_e)) {
 
             memset(name, 0, MAX_FILE_NAME_LEN);
@@ -547,3 +545,119 @@ int32_t sys_unlink(const char* pathname) {
     dir_close(searched_record.parent_dir);
     return 0;
 }
+
+// 创建目录
+int32_t sys_mkdir(const char* pathname) {
+    uint8_t rollback_step = 0; // 用于操作失败时确定资源回滚的步骤
+    void* io_buf = sys_malloc(1024);
+    if (io_buf == NULL) {
+        printk("sysmkdir(): sys_malloc for io_buf failed\n");
+        return -1;
+    }
+
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int32_t i_no = -1;
+    i_no = search_file(pathname, &searched_record);
+    if (i_no != -1) { // 找到了同名的文件或者目录
+        printk("sysmkdir(): file or directory %s exist!\n", pathname);
+        rollback_step = 1;
+        goto rollback;
+    } else {
+        // 判断是不存在该文件还是中间目录不存在
+        uint32_t pathname_depth = path_depth_cnt((char*)pathname);
+        uint32_t path_searched_depth = path_depth_cnt(searched_record.searched_path);
+        if (pathname_depth != path_searched_depth) {
+            // 中间目录不存在
+            printk("sysmkdir(): subpath %s not exist\n", searched_record.searched_path);
+            rollback_step = 1;
+            goto rollback;
+        }
+    }
+
+    struct dir* parent_dir = searched_record.parent_dir;
+
+    // pathname目录名称后可能会有字符'/'
+    char* dirname = strrchr(searched_record.searched_path, '/') + 1;
+    
+    // 为新目录创建i结点
+    i_no = inode_bitmap_alloc(cur_part);
+    if (i_no == -1) {
+        printk("sysmkdir(): allocate for inode failed\n");
+        rollback_step = 1;
+        goto rollback;
+    }
+
+    struct inode new_dir_inode;      
+    inode_init(i_no, &new_dir_inode); // 初始化新目录的i结点
+ 
+    uint32_t block_bitmap_idx = 0;    // 用来记录数据块对应于block_bitmap中的索引
+    int32_t block_lba = -1;
+    block_lba = block_bitmap_alloc(cur_part);
+    if (block_lba == -1) {
+        printk("sysmkdir(): block_bitmap allocate for create directory failed\n");
+        rollback_step = 2;
+        goto rollback;
+    }
+
+    new_dir_inode.i_sectors[0] = block_lba;
+
+    // 分配块后将块位图同步到磁盘中
+    block_bitmap_idx = block_lba - cur_part->sb->data_start_lba;
+    ASSERT(block_bitmap_idx != 0);
+    bitmap_sync(cur_part, block_bitmap_idx, BLOCK_BITMAP);
+ 
+    // 将 "." 和 "." 写入新的目录
+    memset(io_buf, 0, 1024);
+    struct dir_entry* dir_e = (struct dir_entry*)io_buf;
+
+    memcpy(dir_e->filename, ".", 1);
+    dir_e->i_no = i_no;
+    dir_e->f_type = FT_DIR;
+
+    dir_e++;
+
+    memcpy(dir_e->filename, "..", 2);
+    dir_e->i_no = parent_dir->inode->i_no;
+    dir_e->f_type = FT_DIR;
+
+    ide_write(cur_part->my_disk, new_dir_inode.i_sectors[0], io_buf, 1);
+    new_dir_inode.i_size = 2 * cur_part->sb->dir_entry_size;
+
+    struct dir_entry new_dir_entry;
+    memset(&new_dir_entry, 0, sizeof(struct dir_entry));
+    create_dir_entry(dirname, i_no, FT_DIR, &new_dir_entry); // 初始化new_dir_entry目录项
+    // 在父目录中添加新创建目录的目录项
+    if (!sync_dir_entry(parent_dir, &new_dir_entry, io_buf)) { 
+        printk("sys_mkdir(): sync_dir_entry to disk failed!\n");
+        rollback_step = 2;
+    }
+
+    // 将父目录的i结点同步到硬盘
+    memset(io_buf, 0, 1024);
+    inode_sync(cur_part, parent_dir->inode, io_buf);
+    
+    // 将新创建目录的i结点同步到硬盘
+    memset(io_buf, 0, 1024);
+    inode_sync(cur_part, &new_dir_inode, io_buf);
+
+    // 将i结点位图同步到磁盘
+    bitmap_sync(cur_part, i_no, INODE_BITMAP);
+
+    sys_free(io_buf);
+    dir_close(searched_record.parent_dir); // 关闭所创建目录的父目录
+    
+    return 0;
+
+    rollback:
+        switch (rollback_step) {
+            case 2:
+                bitmap_set(&cur_part->inode_map, i_no, 0);
+            case 1:
+                dir_close(searched_record.parent_dir);
+                break;
+        }
+        sys_free(io_buf);
+        return -1;
+}
+

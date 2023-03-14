@@ -35,45 +35,59 @@ int main(void) {
    uint32_t fd1 = sys_open("/file1", O_CREATE);
    sys_close(fd1);
 
-   uint32_t fd2 = sys_open("/file1", O_RDWR);
+   // uint32_t fd2 = sys_open("/file1", O_RDWR);
 
-   // printf("open /file1, fd:%d\n", fd2); 
-   sys_write(fd2, "hello,zhang\n", 12); // 写文件 fd2!!!
-   sys_write(fd2, "zxyzxyzxyzxy", 12); // 写文件 fd2!!!
-   sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
-   sys_close(fd2);
+   // // printf("open /file1, fd:%d\n", fd2); 
+   // sys_write(fd2, "hello,zhang\n", 12); // 写文件 fd2!!!
+   // sys_write(fd2, "zxyzxyzxyzxy", 12); // 写文件 fd2!!!
+   // sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
+   // sys_close(fd2);
 
-   uint32_t fd3 = sys_open("/file1", O_RDWR);
+   // uint32_t fd3 = sys_open("/file1", O_RDWR);
 
-   int read_bytes;
+   // int read_bytes;
    
-   char buf[64] = {0};
-   read_bytes = sys_read(fd3, buf, 24);
-   // ide_read(cur_part->my_disk, 0x6ac, buf, 1);
-   printf("1_ read %d bytes:\n%s", read_bytes, buf);
+   // char buf[64] = {0};
+   // read_bytes = sys_read(fd3, buf, 24);
+   // // ide_read(cur_part->my_disk, 0x6ac, buf, 1);
+   // printf("1_ read %d bytes:\n%s", read_bytes, buf);
 
-   memset(buf, 0, 64);
-   read_bytes = sys_read(fd3, buf, 12);
-   printf("2_ read %d bytes:\n%s", read_bytes, buf);
+   // memset(buf, 0, 64);
+   // read_bytes = sys_read(fd3, buf, 12);
+   // printf("2_ read %d bytes:\n%s", read_bytes, buf);
 
-   memset(buf, 0, 64);
-   read_bytes = sys_read(fd3, buf, 6);
-   printf("3_ read %d bytes:\n%s", read_bytes, buf);
+   // memset(buf, 0, 64);
+   // read_bytes = sys_read(fd3, buf, 6);
+   // printf("3_ read %d bytes:\n%s", read_bytes, buf);
 
-   // printf("________  close file1 and reopen  ________\n");
+   // // printf("________  close file1 and reopen  ________\n");
+   // // sys_close(fd3);
+   // // uint32_t fd4 = sys_open("/file1", O_RDWR);
+   // printf("________ SEEK_SET 0 ________\n");
+   // memset(buf, 0, 64);
+   // sys_sleek(fd3, 0, SEEK_SET);
+   // read_bytes = sys_read(fd3, buf, 24);
+   // printf("4_ read %d bytes:\n%s", read_bytes, buf);
+
    // sys_close(fd3);
-   // uint32_t fd4 = sys_open("/file1", O_RDWR);
-   printf("________ SEEK_SET 0 ________\n");
-   memset(buf, 0, 64);
-   sys_sleek(fd3, 0, SEEK_SET);
-   read_bytes = sys_read(fd3, buf, 24);
-   printf("4_ read %d bytes:\n%s", read_bytes, buf);
 
-   sys_close(fd3);
+   // // sys_close(fd1);
 
-   // sys_close(fd1);
+   // printf("/file1 delete %s!\n", sys_unlink("/file1") == 0 ? "done" : "fail");
 
-   printf("/file1 delete %s!\n", sys_unlink("/file1") == 0 ? "done" : "fail");
+   printf("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
+   printf("/dir1 create %s!\n", sys_mkdir("/dir1") == 0 ? "done" : "fail");
+   printf("now, /dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
+   int fd = sys_open("/dir1/subdir1/file2", O_CREATE|O_RDWR);
+   if (fd != -1) {
+      printf("/dir1/subdir1/file2 create done!\n");
+      sys_write(fd, "zxy\n", 4);
+      sys_sleek(fd, 0, SEEK_SET);
+      char buf[32] = {0};
+      sys_read(fd, buf, 21); 
+      printf("/dir1/subdir1/file2 says:\n%s", buf);
+      sys_close(fd);
+   }
 
    while(1);
    return 0;

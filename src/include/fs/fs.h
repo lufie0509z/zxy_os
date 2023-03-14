@@ -49,4 +49,7 @@ int32_t sys_read(int32_t fd, void* buf, uint32_t cnt);
 
 int32_t sys_sleek(int32_t fd, int32_t offset, uint8_t whence);
 int32_t sys_unlink(const char* pathname);
+
+int32_t sys_mkdir(const char* pathname);
+
 #endif
