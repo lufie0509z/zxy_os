@@ -35,4 +35,6 @@ bool sync_dir_entry(struct dir* parent_dir, struct dir_entry* p_de, void* io_buf
 
 bool delete_dir_entry(struct partition* p, struct dir* pgdir, uint32_t i_no, void* io_buf);
 
+struct dir_entry* dir_read(struct dir* dir);
+
 #endif

@@ -312,3 +312,56 @@ bool delete_dir_entry(struct partition* p, struct dir* pgdir, uint32_t i_no, voi
     }
     return false;
 }
+
+// 读取目录项，成功就返回一个目录项
+struct dir_entry* dir_read(struct dir* dir) {
+    struct dir_entry* dir_e = (struct dir_entry*)dir->dir_buf;
+    struct inode* inode = dir->inode;
+    uint32_t all_blocks[140] = {0};
+    uint32_t block_idx = 0, block_cnt = 12;
+    while (block_idx < 12) {
+        all_blocks[block_idx] = inode->i_sectors[block_idx];
+        block_idx++;
+    }
+    if (inode->i_sectors[12] != 0) {
+        ide_read(cur_part->my_disk, inode->i_sectors[12], all_blocks + 12, 1);
+        block_cnt = 140;
+    }
+    block_idx = 0;
+
+    /* 当前目录项的地址
+     * 每找到一个目录项就将加上一个目录项大小
+     * 直到 cur_dir_entry_pos 的值等于 dir_pos
+     * 才算找到该返回的目录项 */
+    uint32_t cur_dir_entry_pos = 0;
+    uint32_t dir_entry_size = cur_part->sb->dir_entry_size;
+    uint32_t dir_entrys_per_sec = SECTOR_SIZE / dir_entry_size;
+    uint32_t dir_entry_idx;
+
+    while (block_idx < block_cnt) {
+        if (dir->dir_pose >= inode->i_size) return NULL;
+        if (all_blocks[block_idx] == 0) {
+            block_idx++;
+            continue;
+        }
+        memset(dir_e, 0, 512);
+        ide_read(cur_part->my_disk, all_blocks[block_idx], dir_e, 1);
+        dir_entry_idx = 0;
+        while (dir_entry_idx < dir_entrys_per_sec) {
+            if ((dir_e + dir_entry_idx)->f_type != FT_UNKOWN) {
+                // 说明是已返回的目录项
+                if (cur_dir_entry_pos < dir->dir_pose) { 
+                    cur_dir_entry_pos += dir_entry_size;
+                    dir_entry_idx++;
+                    continue;
+                }
+                ASSERT(cur_dir_entry_pos == dir->dir_pose);
+                dir->dir_pose += dir_entry_size;
+                return (dir_e + dir_entry_idx);
+            }
+            dir_entry_idx++;
+        }
+        block_idx++;
+    }
+    return NULL;
+}

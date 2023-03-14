@@ -692,3 +692,14 @@ int32_t sys_closedir(struct dir* dir) {
     }
     return -1;
 }
+
+// 读取目录dir的一个目录项，成功返回其地址，读到目录尾或错误时返回NULL
+struct dir_entry* sys_readdir(struct dir* dir) {
+    ASSERT(dir != NULL);
+    return dir_read(dir);
+}
+
+// 目录回绕，将目录dir的dir_pose值置0
+void sys_rewinddir(struct dir* dir) {
+    dir->dir_pose = 0;
+}

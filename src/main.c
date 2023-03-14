@@ -14,7 +14,9 @@
 #include <user/syscall-init.h>
 #include <lib/stdio.h>
 #include <fs/fs.h>
+#include <fs/dir.h>
 #include <fs/file.h>
+#include <fs/inode.h>
 
 void k_thread_a(void*);
 void k_thread_b(void*);
@@ -89,15 +91,34 @@ int main(void) {
       sys_close(fd);
    }
 
+   // struct dir* p_dir = sys_opendir("/dir1/subdir1");
+   // if (p_dir) {
+
+   //    printf("/dir1/subdir1 open done!\n");
+   //    if (sys_closedir(p_dir) == 0) printf("/dir1/subdir1 close done!\n");
+   //    else printf("/dir1/subdir1 close fail!\n");
+
+   // } else {
+   //    printf("/dir1/subdir1 open fail!\n");
+   // }
+
    struct dir* p_dir = sys_opendir("/dir1/subdir1");
    if (p_dir) {
+      printf("/dir1/subdir1 open done!\ncontent:\n");
+      char* type = NULL;
+      struct dir_entry* dir_e = NULL;
+   
+      while ((dir_e = sys_readdir(p_dir))) {
+         if (dir_e->f_type == FT_REGULAR) type = "regular";
+         else type = "directory";
+         printf("    %s  %s\n", type, dir_e->filename);
+      }
 
-      printf("/dir1/subdir1 open done!\n");
-      if (sys_closedir(p_dir) == 0) printf("/dir1/subdir1 close done!\n");
-      else printf("/dir1/subdir1 close fail!\n");
-      
+      // 关闭目录
+      if (sys_closedir(p_dir) == 0) printf("dir1/subdir1 close done!\n");
+      else printf("dir1/subdir1 close failed!\n");
    } else {
-      printf("/dir1/subdir1 open fail!\n");
+      printf("/dir1/subdir1 open failed!\n");
    }
 
    while(1);
