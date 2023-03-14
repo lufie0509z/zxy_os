@@ -51,5 +51,6 @@ int32_t sys_sleek(int32_t fd, int32_t offset, uint8_t whence);
 int32_t sys_unlink(const char* pathname);
 
 int32_t sys_mkdir(const char* pathname);
-
+struct dir* sys_opendir(const char* name);
+int32_t sys_closedir(struct dir* dir);
 #endif

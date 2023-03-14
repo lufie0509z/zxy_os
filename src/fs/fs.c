@@ -661,3 +661,34 @@ int32_t sys_mkdir(const char* pathname) {
         return -1;
 }
 
+// 打开目录，成功则返回其目录指针
+struct dir* sys_opendir(const char* name) {
+    ASSERT(strlen(name) < MAX_FILE_NAME_LEN);
+    // 根目录直接返回
+    if (name[0] == '/' && (name[1] == 0 || name[1] == '.')) return &root_dir;
+
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int32_t i_no = search_file(name, &searched_record); 
+    struct dir* ret = NULL;
+    if (i_no == -1) {
+        printk("in %s, sub path %s not exist\n", name, searched_record.searched_path);
+    } else {
+        if (searched_record.f_type == FT_REGULAR) {
+            printk("%s is regular file\n", name);
+        } else if (searched_record.f_type == FT_DIR) {
+            ret = dir_open(cur_part, i_no);
+        }
+    }
+    dir_close(searched_record.parent_dir);
+    return ret;
+}
+
+// 关闭目录
+int32_t sys_closedir(struct dir* dir) {
+    if (dir != NULL) {
+        dir_close(dir);
+        return 0;
+    }
+    return -1;
+}
