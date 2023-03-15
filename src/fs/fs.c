@@ -170,67 +170,6 @@ static bool partition_mount(struct list_elem* pelem, int arg) {
 }
 
 
-// 文件系统初始化，如果没有就对分区进行格式化并创建文件系统
-void filesys_init() {
-    uint8_t channel_no = 0, dev_no = 0, partition_idx = 0;
-
-    struct super_block* sb_buf = (struct super_block*)sys_malloc(SECTOR_SIZE);
-    if (sb_buf == NULL) PANIC("memory allocation failed!!!!!!");
-
-    printk("searching file system ......");
-
-    while (channel_no < channel_cnt) {   // 遍历通道
-        dev_no = 0;
-        while (dev_no < 2) {             // 遍历硬盘设备
-            if (dev_no == 0) {           // 跳过裸盘hd60.img
-                dev_no++;
-                continue;
-            }
-            struct disk* hd = &channels[channel_no].devices[dev_no];
-            struct partition* p = hd->prim_parts;
-
-            while (partition_idx < 12) {  // 最多只支持4个主分区+8个逻辑分区
-                if (partition_idx == 4) { // 逻辑分区
-                    p = hd->logic_parts;                    
-                }
-
-                /* channels数组为全局变量，默认为0，嵌套成员partition也为0
-                 * 扫描分区表时会将分区信息写入p中 
-                 *此处用于判断分区是否存在 */
-                if (p->sec_cnt != 0) {     
-                    memset(sb_buf, 0, SECTOR_SIZE);
-                    ide_read(hd, p->start_lba + 1, sb_buf, 1);  // 将超级块信息读入到缓存区中
-
-                    // if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
-                    //     printk("%s has filesystem\n", p->name);
-                    // } else {                                    // 初始化文件系统
-                        printk("formatting %s's partition%s\n", hd->name, p->name);
-                        partition_format(p);
-                    // }
-
-                }
-                partition_idx++;
-                p++;  // 下一个分区
-            }
-            dev_no++;
-        }
-        channel_no++;
-    }
-    sys_free(sb_buf);
-
-    char default_part[8] = "sdb1"; // 默认挂载到的分区
-  
-    list_traversal(&partition_list, partition_mount, (int)default_part);
-
-    // 打开根目录
-    open_root_dir(cur_part);
-
-    // 初始化文件描述符表
-    uint32_t fd_idx = 0; 
-    while (fd_idx++ < MAX_FILES_OPEN) {
-        file_table[fd_idx].fd_inode = NULL;
-    }
-}
 
 // 目录路径解析，name_store存储最上层路径，返回除最上层外的剩余子路径
 static char* path_parse(char* pathname, char* name_store) {
@@ -739,11 +678,10 @@ static uint32_t get_parent_dir_i_no (uint32_t child_i_no, void* io_buf) {
 
     uint32_t block_lba = child_dir_inode->i_sectors[0];
     ASSERT(block_lba >= cur_part->sb->data_start_lba);
-    
-    ide_read(cur_part->my_disk, block_lba, io_buf, 1);
 
     inode_close(child_dir_inode);
 
+    ide_read(cur_part->my_disk, block_lba, io_buf, 1);
 
     struct dir_entry* dir_e = (struct dir_entry*)io_buf;
     ASSERT(dir_e[1].i_no < 4096 && dir_e[1].f_type == FT_DIR);
@@ -798,25 +736,30 @@ static int32_t get_child_dir_name(uint32_t parent_i_no, uint32_t child_i_no, cha
 
 // 将当前工作目录的绝对路径写入buf，size是buf的大小
 char* sys_getcwd(char* buf, uint32_t size) {
-    // 当用户进程提供的buf为空的时候，会在系统调用getcwd中用malloc分配内存 
+   // 当用户进程提供的buf为空的时候，会在系统调用getcwd中用malloc分配内存 
     ASSERT(buf != NULL);
     void* io_buf = sys_malloc(SECTOR_SIZE);
-    if (io_buf == NULL) return NULL;
+    if (io_buf == NULL) {
+        return NULL;
+    }
 
-    struct task_struct* cur = running_thread();
+    struct task_struct* cur_thread = running_thread();
     int32_t parent_i_no = 0;
-    int32_t child_i_no = cur->cwd_inode_nr;
-    ASSERT(child_i_no >= 0 && child_i_no < 4096);
-
-    if (child_i_no == 0) { // 根目录
+    int32_t child_i_no = cur_thread->cwd_inode_nr;
+    ASSERT(child_i_no >= 0 && child_i_no < 4096); 
+    
+    // 根目录
+    if (child_i_no == 0) {
         buf[0] = '/';
         buf[1] = 0;
         return buf;
     }
 
+    memset(buf, 0, size);
     char full_path_reverse[MAX_PATH_LEN] = {0}; // 反转的绝对路径
-    
-    while (child_i_no) {
+
+    // 从下往上逐层找父目录,直到找到根目录为止.
+    while ((child_i_no)) {
         parent_i_no = get_parent_dir_i_no(child_i_no, io_buf);
         if (get_child_dir_name(parent_i_no, child_i_no, full_path_reverse, io_buf) == -1) {
             sys_free(io_buf);
@@ -824,23 +767,21 @@ char* sys_getcwd(char* buf, uint32_t size) {
         }
         child_i_no = parent_i_no;
     }
-
-    printk("full_path_reverse: %s\n", full_path_reverse);
+    ASSERT(strlen(full_path_reverse) <= size);
 
     /* full_path_reverse中的路径是反着的
      * 子目录在前(左)，父目录在后(右)
      * 反转目录顺序，目录名本身不反转
      * 如若原路径为“/ab/c”，在 full_path_reverse 的将是“/c/ab” */
-     char* last_slash; // 用于记录字符串中最后一个斜杠的地址
-     memset(buf, 0, size);
-     while ((last_slash = strrchr(full_path_reverse, '/'))) {
-         uint16_t len = strlen(buf);
-         strcpy(buf + len, last_slash);
-         // 在full_path_reverse中添加结束字符，作为下一次执行strcpy中last_slash的边界
-         *last_slash = 0;
-     }
-     sys_free(io_buf);
-     return buf;
+    char* last_slash;	// 用于记录字符串中最后一个斜杠地址
+    while ((last_slash = strrchr(full_path_reverse, '/'))) {
+        uint16_t len = strlen(buf);
+        strcpy(buf + len, last_slash);
+        // 在full_path_reverse中添加结束字符，作为下一次执行strcpy中last_slash的边界
+        *last_slash = 0;
+    }
+    sys_free(io_buf);
+    return buf;
 }
 
 // 更改当前工作目录为绝对路径pathname，核心原理就是修改 cwd_inode_nr
@@ -857,4 +798,67 @@ int32_t sys_chdir(const char* pathname) {
     }
     dir_close(searched_record.parent_dir);
     return ret;
+}
+
+
+// 文件系统初始化，如果没有就对分区进行格式化并创建文件系统
+void filesys_init() {
+    uint8_t channel_no = 0, dev_no = 0, partition_idx = 0;
+
+    struct super_block* sb_buf = (struct super_block*)sys_malloc(SECTOR_SIZE);
+    if (sb_buf == NULL) PANIC("memory allocation failed!!!!!!");
+
+    printk("searching file system ......");
+
+    while (channel_no < channel_cnt) {   // 遍历通道
+        dev_no = 0;
+        while (dev_no < 2) {             // 遍历硬盘设备
+            if (dev_no == 0) {           // 跳过裸盘hd60.img
+                dev_no++;
+                continue;
+            }
+            struct disk* hd = &channels[channel_no].devices[dev_no];
+            struct partition* p = hd->prim_parts;
+
+            while (partition_idx < 12) {  // 最多只支持4个主分区+8个逻辑分区
+                if (partition_idx == 4) { // 逻辑分区
+                    p = hd->logic_parts;                    
+                }
+
+                /* channels数组为全局变量，默认为0，嵌套成员partition也为0
+                 * 扫描分区表时会将分区信息写入p中 
+                 *此处用于判断分区是否存在 */
+                if (p->sec_cnt != 0) {     
+                    memset(sb_buf, 0, SECTOR_SIZE);
+                    ide_read(hd, p->start_lba + 1, sb_buf, 1);  // 将超级块信息读入到缓存区中
+
+                    // if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
+                    //     printk("%s has filesystem\n", p->name);
+                    // } else {                                    // 初始化文件系统
+                        printk("formatting %s's partition%s\n", hd->name, p->name);
+                        partition_format(p);
+                    // }
+
+                }
+                partition_idx++;
+                p++;  // 下一个分区
+            }
+            dev_no++;
+        }
+        channel_no++;
+    }
+    sys_free(sb_buf);
+
+    char default_part[8] = "sdb1"; // 默认挂载到的分区
+  
+    list_traversal(&partition_list, partition_mount, (int)default_part);
+
+    // 打开根目录
+    open_root_dir(cur_part);
+
+    // 初始化文件描述符表
+    uint32_t fd_idx = 0; 
+    while (fd_idx++ < MAX_FILES_OPEN) {
+        file_table[fd_idx].fd_inode = NULL;
+    }
 }
