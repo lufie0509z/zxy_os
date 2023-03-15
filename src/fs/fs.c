@@ -800,6 +800,33 @@ int32_t sys_chdir(const char* pathname) {
     return ret;
 }
 
+// 将文件的属性相关信息填入buf
+int32_t sys_stat(const char* path, struct stat* buf) {
+    // 根目录
+    if (!strcmp(path, "/" || !strcmp(path, "/." || ! strcmp(path, "/..")))) {
+        buf->st_ino = 0;
+        buf->st_size = root_dir.inode->i_size;
+        buf->st_filetype = FT_DIR;
+        return 0;
+    }
+
+    int32_t ret = -1;
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int32_t i_no = search_file(path, &searched_record);
+    
+    if (i_no != -1) {
+        struct inode* inode = inode_open(cur_part, i_no);
+        buf->st_ino = i_no;
+        buf->st_filetype = searched_record.f_type;
+        buf->st_size = inode->i_size;
+        inode_close(inode);
+        ret = 0;
+    }else printk("sys_stat: %s not found\n", path);
+    dir_close(searched_record.parent_dir);
+    return ret;
+}
+
 
 // 文件系统初始化，如果没有就对分区进行格式化并创建文件系统
 void filesys_init() {

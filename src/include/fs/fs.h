@@ -38,6 +38,13 @@ struct path_search_record {
     enum file_types f_type;
 };
 
+// 文件属性
+struct stat {
+    uint32_t st_ino;   // i结点编号
+    uint32_t st_size;  // 文件大小
+    enum file_types st_filetype;
+};
+
 void filesys_init();
 int32_t path_depth_cnt (char* pathname);
 
@@ -62,4 +69,6 @@ int32_t sys_rmdir(const char* pathname);
 char* sys_getcwd(char* buf, uint32_t size);
 int32_t sys_chdir(const char* pathname);
 
+int32_t sys_stat(const char* path, struct stat* buf);
+ 
 #endif
