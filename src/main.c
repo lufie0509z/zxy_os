@@ -79,17 +79,17 @@ int main(void) {
 
    printf("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
    printf("/dir1 create %s!\n", sys_mkdir("/dir1") == 0 ? "done" : "fail");
-   printf("now, /dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
-   int fd = sys_open("/dir1/subdir1/file2", O_CREATE|O_RDWR);
-   if (fd != -1) {
-      printf("/dir1/subdir1/file2 create done!\n");
-      sys_write(fd, "Catch me if you can!\n", 21);
-      sys_sleek(fd, 0, SEEK_SET);
-      char buf[32] = {0};
-      sys_read(fd, buf, 21); 
-      printf("/dir1/subdir1/file2 says:\n%s", buf);
-      sys_close(fd);
-   }
+   printf("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
+   // int fd = sys_open("/dir1/subdir1/file2", O_CREATE|O_RDWR);
+   // if (fd != -1) {
+   //    printf("/dir1/subdir1/file2 create done!\n");
+   //    sys_write(fd, "Catch me if you can!\n", 21);
+   //    sys_sleek(fd, 0, SEEK_SET);
+   //    char buf[32] = {0};
+   //    sys_read(fd, buf, 21); 
+   //    printf("/dir1/subdir1/file2 says:\n%s", buf);
+   //    sys_close(fd);
+   // }
 
    // struct dir* p_dir = sys_opendir("/dir1/subdir1");
    // if (p_dir) {
@@ -121,44 +121,52 @@ int main(void) {
    //    printf("/dir1/subdir1 open failed!\n");
    // }
 
-   struct dir* p_dir = sys_opendir("/dir1");
-   printf("/dir1 content before delete /dir1/subdir1:\n");
-   char* type = NULL;
-   struct dir_entry* dir_e = NULL;
-   while ((dir_e = sys_readdir(p_dir))) {
-      if (dir_e->f_type == FT_REGULAR) type = "regular";
-      else type = "directory";
-      printf("    %s  %s\n", type, dir_e->filename);
-   }
+   // struct dir* p_dir = sys_opendir("/dir1");
+   // printf("/dir1 content before delete /dir1/subdir1:\n");
+   // char* type = NULL;
+   // struct dir_entry* dir_e = NULL;
+   // while ((dir_e = sys_readdir(p_dir))) {
+   //    if (dir_e->f_type == FT_REGULAR) type = "regular";
+   //    else type = "directory";
+   //    printf("    %s  %s\n", type, dir_e->filename);
+   // }
 
-   // 删除/dir1/subdir1
-   printf("try to delete nonempty directory /dir1/subdir1\n");
-   if (sys_rmdir("/dir1/subdir1") == -1) {
-      printf("sys_rmdir: /dir1/subdir1 delete fail!\n");
-   }
+   // // 删除/dir1/subdir1
+   // printf("try to delete nonempty directory /dir1/subdir1\n");
+   // if (sys_rmdir("/dir1/subdir1") == -1) {
+   //    printf("sys_rmdir: /dir1/subdir1 delete fail!\n");
+   // }
    
-   printf("try to delete /dir1/subdir1/file2\n");
-   if (sys_rmdir("/dir1/subdir1/file2") == -1) {
-      printf("sys_rmdir: /dir1/subdir1/file2 delete fail!\n");
-   } 
+   // printf("try to delete /dir1/subdir1/file2\n");
+   // if (sys_rmdir("/dir1/subdir1/file2") == -1) {
+   //    printf("sys_rmdir: /dir1/subdir1/file2 delete fail!\n");
+   // } 
 
-   if (sys_unlink("/dir1/subdir1/file2") == 0 ) {
-      printf("sys_unlink: /dir1/subdir1/file2 delete done\n");
-   }
+   // if (sys_unlink("/dir1/subdir1/file2") == 0 ) {
+   //    printf("sys_unlink: /dir1/subdir1/file2 delete done\n");
+   // }
 
-   printf("try to delete directory /dir1/subdir1 again\n");
-   if (sys_rmdir("/dir1/subdir1") == 0) {
-      printf("/dir1/subdir1 delete done!\n");
-   }
+   // printf("try to delete directory /dir1/subdir1 again\n");
+   // if (sys_rmdir("/dir1/subdir1") == 0) {
+   //    printf("/dir1/subdir1 delete done!\n");
+   // }
 
-   printf("/dir1 content after delete /dir1/subdir1:\n");
-   sys_rewinddir(p_dir);
+   // printf("/dir1 content after delete /dir1/subdir1:\n");
+   // sys_rewinddir(p_dir);
 
-   while((dir_e = sys_readdir(p_dir))) { 
-      if (dir_e->f_type == FT_REGULAR) type = "regular";
-      else type = "directory";
-      printf("    %s  %s\n", type, dir_e->filename);
-   }
+   // while((dir_e = sys_readdir(p_dir))) { 
+   //    if (dir_e->f_type == FT_REGULAR) type = "regular";
+   //    else type = "directory";
+   //    printf("    %s  %s\n", type, dir_e->filename);
+   // }
+
+   char cwd_buf[32] = {0};
+   sys_getcwd(cwd_buf, 32);
+   printf("cwd: %s\n", cwd_buf);
+   sys_chdir("/dir1/subdir1");
+   printf("change cwd to /dir1/subdir1 now\n");
+   sys_getcwd(cwd_buf, 32);
+   printf("cwd: %s\n", cwd_buf);
    while(1);
    return 0;
 }

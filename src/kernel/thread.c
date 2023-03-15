@@ -99,6 +99,8 @@ void init_thread(struct task_struct* pthread, char* name, int prio) {
         fd_idx++;
     }
 
+    pthread->cwd_inode_nr = 0; // 默认工作路径为根目录
+
     //self_kstack 是线程自己在内核态下使用的栈顶地址
     pthread->stack_magic = 0x20000509;
 

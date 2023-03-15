@@ -62,26 +62,28 @@ struct thread_stack {
 
 //程序控制块PCB
 struct task_struct {
-   uint32_t* self_kstack;//内核线程自己的内核栈栈顶指针
+   uint32_t* self_kstack; // 内核线程自己的内核栈栈顶指针
    pid_t pid;
    enum task_status status;
    char name[16];
    uint8_t priority;
    
-   uint8_t ticks;//嘀嗒数
-   uint32_t elapsed_ticks;//已经占用了的cpu嘀嗒数
+   uint8_t ticks; // 嘀嗒数
+   uint32_t elapsed_ticks; // 已经占用了的cpu嘀嗒数
 
-   int32_t fdtable[MAX_FILES_OPEN_PER_PROC];  //文件描述符数组
+   int32_t fdtable[MAX_FILES_OPEN_PER_PROC]; // 文件描述符数组
 
-   struct list_elem general_tag;//一般队列中的节点
-   struct list_elem all_list_tag;//线程队列中的节点
+   struct list_elem general_tag;  // 一般队列中的节点
+   struct list_elem all_list_tag; // 线程队列中的节点
 
-   uint32_t* pgdir;//进程页表的虚拟地址，线程为NULL
-   struct virtual_addr userprog_vaddr; //用户进程的虚拟地址池
+   uint32_t* pgdir; // 进程页表的虚拟地址，线程为NULL
+   struct virtual_addr userprog_vaddr; // 用户进程的虚拟地址池
 
-   struct mem_block_desc u_block_desc[DESC_CNT]; //用户内存块描述符数组
+   struct mem_block_desc u_block_desc[DESC_CNT]; // 用户内存块描述符数组
 
-   uint32_t stack_magic;//栈的边界标记，用于检测栈溢出
+   uint32_t cwd_inode_nr; // 进程所在工作目录的i结点编号
+
+   uint32_t stack_magic;  // 栈的边界标记，用于检测栈溢出
 };
 
 extern struct list thread_ready_list;

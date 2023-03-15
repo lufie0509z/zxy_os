@@ -10,6 +10,7 @@
 #include <kernel/global.h>
 #include <kernel/string.h>
 #include <kernel/memory.h>
+#include <kernel/thread.h>
 #include <kernel/interrupt.h>
 #include <lib/kernel/bitmap.h>
 #include <lib/kernel/stdio-kernel.h>
@@ -725,6 +726,134 @@ int32_t sys_rmdir(const char* pathname) {
             } 
             dir_close(dir);
         }
+    }
+    dir_close(searched_record.parent_dir);
+    return ret;
+}
+
+
+// 获取父目录的i结点编号
+static uint32_t get_parent_dir_i_no (uint32_t child_i_no, void* io_buf) {
+
+    struct inode* child_dir_inode = inode_open(cur_part, child_i_no); // 子目录
+
+    uint32_t block_lba = child_dir_inode->i_sectors[0];
+    ASSERT(block_lba >= cur_part->sb->data_start_lba);
+    
+    ide_read(cur_part->my_disk, block_lba, io_buf, 1);
+
+    inode_close(child_dir_inode);
+
+
+    struct dir_entry* dir_e = (struct dir_entry*)io_buf;
+    ASSERT(dir_e[1].i_no < 4096 && dir_e[1].f_type == FT_DIR);
+    return dir_e[1].i_no; 
+}
+
+/* 在i结点号为parent_i_no的父目录中找到子结点号为child_i_no的子目录名字
+ * 该函数每次只获取一层目录的名称
+ * 传入的参数 path 用于拼接完整的绝对路径
+ * 每次调用前，path 是非空的，里面已存储了部分路径到名称了 */
+static int32_t get_child_dir_name(uint32_t parent_i_no, uint32_t child_i_no, char* path, void* io_buf) {
+    struct inode* parent_dir_inode = inode_open(cur_part, parent_i_no);
+
+    uint8_t block_idx = 0;
+    uint32_t all_blocks[140] = {0};
+    uint32_t block_cnt = 12;
+    while (block_idx < 12) {
+        all_blocks[block_idx] = parent_dir_inode->i_sectors[block_idx];
+        block_idx++;
+    }
+    if (parent_dir_inode->i_sectors[12] != 0) {
+        ide_read(cur_part->my_disk, parent_dir_inode->i_sectors[12], all_blocks + 12, 1);
+        block_cnt = 140;
+    }
+
+    inode_close(parent_dir_inode);
+
+    struct dir_entry* dir_e = (struct dir_entry*)io_buf;
+    uint32_t dir_entry_size = cur_part->sb->dir_entry_size;
+    uint32_t dir_entrys_per_sec = (SECTOR_SIZE / dir_entry_size);
+
+    block_idx = 0;
+    while (block_idx < block_cnt) {
+        if (all_blocks[block_idx]) {
+            ide_read(cur_part->my_disk, all_blocks[block_idx], io_buf, 1);
+            uint8_t dir_entry_idx = 0;
+            while (dir_entry_idx < dir_entrys_per_sec) {
+                if ((dir_e + dir_entry_idx)->i_no == child_i_no) {
+                    // 拼接路径名
+                    strcat(path, "/");
+                    strcat(path, (dir_e + dir_entry_idx)->filename);
+                    return 0;
+                }
+                dir_entry_idx++;
+            }
+        }
+        block_idx++;
+    }
+    return -1;
+}
+
+
+// 将当前工作目录的绝对路径写入buf，size是buf的大小
+char* sys_getcwd(char* buf, uint32_t size) {
+    // 当用户进程提供的buf为空的时候，会在系统调用getcwd中用malloc分配内存 
+    ASSERT(buf != NULL);
+    void* io_buf = sys_malloc(SECTOR_SIZE);
+    if (io_buf == NULL) return NULL;
+
+    struct task_struct* cur = running_thread();
+    int32_t parent_i_no = 0;
+    int32_t child_i_no = cur->cwd_inode_nr;
+    ASSERT(child_i_no >= 0 && child_i_no < 4096);
+
+    if (child_i_no == 0) { // 根目录
+        buf[0] = '/';
+        buf[1] = 0;
+        return buf;
+    }
+
+    char full_path_reverse[MAX_PATH_LEN] = {0}; // 反转的绝对路径
+    
+    while (child_i_no) {
+        parent_i_no = get_parent_dir_i_no(child_i_no, io_buf);
+        if (get_child_dir_name(parent_i_no, child_i_no, full_path_reverse, io_buf) == -1) {
+            sys_free(io_buf);
+            return NULL;
+        }
+        child_i_no = parent_i_no;
+    }
+
+    printk("full_path_reverse: %s\n", full_path_reverse);
+
+    /* full_path_reverse中的路径是反着的
+     * 子目录在前(左)，父目录在后(右)
+     * 反转目录顺序，目录名本身不反转
+     * 如若原路径为“/ab/c”，在 full_path_reverse 的将是“/c/ab” */
+     char* last_slash; // 用于记录字符串中最后一个斜杠的地址
+     memset(buf, 0, size);
+     while ((last_slash = strrchr(full_path_reverse, '/'))) {
+         uint16_t len = strlen(buf);
+         strcpy(buf + len, last_slash);
+         // 在full_path_reverse中添加结束字符，作为下一次执行strcpy中last_slash的边界
+         *last_slash = 0;
+     }
+     sys_free(io_buf);
+     return buf;
+}
+
+// 更改当前工作目录为绝对路径pathname，核心原理就是修改 cwd_inode_nr
+int32_t sys_chdir(const char* pathname) {
+    int32_t ret = -1;
+    struct path_search_record searched_record;
+    memset(&searched_record, 0, sizeof(struct path_search_record));
+    int32_t i_no = search_file(pathname, &searched_record);
+    if (i_no != -1) {
+        if (searched_record.f_type == FT_DIR) {
+            running_thread()->cwd_inode_nr = i_no;
+            ret = 0;
+        } else  printk("sys_chdir: %s is regular file or other!\n", pathname); 
     }
     dir_close(searched_record.parent_dir);
     return ret;
