@@ -365,3 +365,37 @@ struct dir_entry* dir_read(struct dir* dir) {
     }
     return NULL;
 }
+
+// 判断目录是不是空的
+bool dir_is_empty(struct dir* dir) {
+    struct inode* dir_inode = dir->inode;
+    return (dir_inode->i_size == cur_part->sb->dir_entry_size * 2);
+}
+
+// 在父目录下删除子目录
+int32_t dir_remove(struct dir* parent_dir, struct dir* child_dir) {
+    struct inode* child_dir_inode = child_dir->inode;
+    int32_t block_idx = 1;
+    // 目录是空的话只有第一个扇区有内容，其他扇区应该为空
+    while (block_idx < 13) {
+        ASSERT(child_dir_inode->i_sectors[block_idx] == 0);
+        block_idx++;
+    }
+    ASSERT(child_dir_inode->i_size == cur_part->sb->dir_entry_size * 2);
+
+    void* io_buf = sys_malloc(1024);
+    if (io_buf == NULL) {
+        printk("dir_remove: malloc for io_buf failed\n");
+        return -1;
+    }
+
+    // 在父目录下删除子目录对应的目录项
+    delete_dir_entry(cur_part, parent_dir, child_dir_inode->i_no, io_buf);
+
+    // 回收i结点中i_sectors占用的扇区和位图相关
+    inode_release(cur_part, child_dir_inode->i_no);
+
+    sys_free(io_buf);
+    return 0;
+
+}
