@@ -39,6 +39,20 @@ static void readline(char* buf, int32_t cnt) {
                     putchar('\b');
                 }
                 break;
+
+            case 'l' - 'a':  // ctrl+l 清屏
+                *pos = 0;
+                clear();
+                print_prompt();
+                printf("%s", buf); // 将之前输入的命令打印出来
+                break;
+            case 'u' - 'a': // ctrl+u 清除输入
+                while (buf != pos) {
+                    putchar('\b');
+                    *(pos--) = 0;
+                }
+                break;
+                
             default:    // 非控制键
                 putchar(*pos);
                 pos++;

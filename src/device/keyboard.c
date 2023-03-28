@@ -158,6 +158,12 @@ static void intr_keyboard_handler() {
         char cur_ch = keymap[index][shift];
 
         if (cur_ch) {
+            /* 快捷键ctrl+l和ctrl+u的处理 
+             * 将在shell中将ascii值为l-a和u-a的分
+             * 别处理为清屏和删除输入的快捷键 */
+            if ((ctrl_down_last && cur_ch == 'l') || (ctrl_down_last && cur_ch == 'u')) {
+                cur_ch -= 'a';
+            }
             // put_char(cur_ch);
             // 如果键盘缓冲区没有满
             if (!ioq_full(&kbd_buf)) {
