@@ -5,6 +5,8 @@
 #include <fs/super_block.h>
 #include <device/ide.h>
 #include <device/console.h>
+#include <device/ioqueue.h>
+#include <device/keyboard.h>
 #include <kernel/list.h>
 #include <kernel/debug.h>
 #include <kernel/global.h>
@@ -398,11 +400,26 @@ int32_t sys_write(int32_t fd, const void* buf, uint32_t cnt) {
 
 
 int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
-    ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
+    // ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
     ASSERT(buf != NULL);
+    int32_t ret = -1;
 
-    uint32_t global_fd = fd_local_to_global(fd);
-    return file_read(&file_table[global_fd], buf, cnt);
+    if (fd < 0 || fd == std_out || fd == std_err) printk("sys_read:fd error\n");
+    else if (fd == stdin_no) { // 从键盘获取输入
+        char* buffer = buf;
+        uint32_t bytes_read = 0;
+        while (bytes_read < cnt) {
+            *buffer = ioq_get_char(&kbd_buf);
+            bytes_read++;
+            buffer++;
+        }
+        ret = bytes_read == 0 ? -1 : (int32_t)bytes_read;
+    } else {
+        uint32_t global_fd = fd_local_to_global(fd);
+        ret = file_read(&file_table[global_fd], buf, cnt);
+    }
+
+    return ret;
 }
 
 
@@ -827,6 +844,9 @@ int32_t sys_stat(const char* path, struct stat* buf) {
     return ret;
 }
 
+void sys_putchar(char char_asci) {
+   console_put_char(char_asci);
+}
 
 // 文件系统初始化，如果没有就对分区进行格式化并创建文件系统
 void filesys_init() {

@@ -216,3 +216,44 @@ set_cursor:
    out dx, al
    popad
    ret
+
+; 清屏
+global cls_screen
+cls_screen:
+    pushad
+    ; 用户程序的 cpl 为 3，显存段的 dpl 为 0，
+    ; 显存段的选择子 gs 在低于自己特权的环境中为 0，
+    ; 导致用户程序再次进入中断后，gs 为 0，
+    ; 故直接在 put_str 中每次都为 gs 赋值
+    mov ax, SELECTOR_VIDEO 
+    mov gs, ax
+
+    mov ebx, 0
+    mov ecx, 80 * 25
+  .cls
+    mov word [gs:ebx], 0x0720  ; 0x0720是黑底白字的空格键
+    add ebx, 2
+    loop .cls
+    mov ebx, 0
+
+  .set_cursor
+    ;;;;;;; 1 先设置高8位 ;;;;;;;;
+    mov dx, 0x03d4			   ;索引寄存器
+    mov al, 0x0e			   ;用于提供光标位置的高8位
+    out dx, al
+    mov dx, 0x03d5			   ;通过读写数据端口0x3d5来获得或设置光标位置 
+    mov al, bh
+    out dx, al
+
+    ;;;;;;; 2 再设置低8位 ;;;;;;;;;
+    mov dx, 0x03d4
+    mov al, 0x0f
+    out dx, al
+    mov dx, 0x03d5 
+    mov al, bl
+    out dx, al
+
+
+    
+    popad
+    ret

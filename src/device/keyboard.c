@@ -161,7 +161,7 @@ static void intr_keyboard_handler() {
             // put_char(cur_ch);
             // 如果键盘缓冲区没有满
             if (!ioq_full(&kbd_buf)) {
-                put_char(cur_ch);
+                // put_char(cur_ch);
                 ioq_put_char(&kbd_buf, cur_ch);
             }
             

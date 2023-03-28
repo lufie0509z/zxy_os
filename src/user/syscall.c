@@ -127,3 +127,15 @@ void free(void* ptr) {
 pid_t fork() {
    return _syscall0(SYS_FORK);
 }
+
+int32_t read(int32_t fd, void* buf, uint32_t cnt) {
+   _syscall3(SYS_READ, fd, buf, cnt);
+}
+
+void putchar(char char_asci) {
+   _syscall1(SYS_PUTCHAR, char_asci);
+}
+
+void clear() {
+   _syscall0(SYS_CLEAR);
+}

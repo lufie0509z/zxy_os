@@ -10,6 +10,7 @@
 #include <kernel/global.h>
 #include <kernel/memory.h>
 #include <kernel/string.h>
+#include <user/shell.h>
 #include <user/syscall.h>
 #include <user/syscall-init.h>
 #include <lib/stdio.h>
@@ -23,13 +24,13 @@ int main(void) {
    put_str("I am kernel\n");
    init_all();
    // intr_enable();
-  
    // process_execute(u_prog_a, "u_prog_a");
    // process_execute(u_prog_b, "u_prog_b");
    // thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
    // thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
    
-
+   cls_screen();
+   console_put_str("[zzzzzxy@localhost /]$ ");
    while(1);
    return 0;
 }
@@ -39,12 +40,16 @@ void init() {
   
    uint32_t ret_pid = fork();
    if (ret_pid) {
-      printf("I am father, my pid is %d, child pid is %d\n", getpid(), ret_pid);
+      // printf("I am father, my pid is %d, child pid is %d\n", getpid(), ret_pid);
+      while(1);
        
    } else {
-      printf("I am child, my pid is %d, ret pid is %d\n", getpid(), ret_pid);
+      // printf("I am child, my pid is %d, ret pid is %d\n", getpid(), ret_pid);
+      my_shell();
+
    }
-   while(1);
+   // while(1);
+   PANIC("init: should not be here");
 }
 
 /* 在线程中运行的函数 */
