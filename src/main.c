@@ -18,167 +18,33 @@
 #include <fs/file.h>
 #include <fs/inode.h>
 
-void k_thread_a(void*);
-void k_thread_b(void*);
-void u_prog_a(void);
-void u_prog_b(void);
-
+void init();
 int main(void) {
    put_str("I am kernel\n");
    init_all();
    // intr_enable();
   
-   process_execute(u_prog_a, "u_prog_a");
-   process_execute(u_prog_b, "u_prog_b");
-   thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
-   thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
+   // process_execute(u_prog_a, "u_prog_a");
+   // process_execute(u_prog_b, "u_prog_b");
+   // thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
+   // thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
    
-   
-   // uint32_t fd1 = sys_open("/file1", O_CREATE);
-   // sys_close(fd1);
 
-   // uint32_t fd2 = sys_open("/file1", O_RDWR);
-
-   // // printf("open /file1, fd:%d\n", fd2); 
-   // sys_write(fd2, "hello,zhang\n", 12); // 写文件 fd2!!!
-   // sys_write(fd2, "zxyzxyzxyzxy", 12); // 写文件 fd2!!!
-   // sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
-   // sys_close(fd2);
-
-   // uint32_t fd3 = sys_open("/file1", O_RDWR);
-
-   // int read_bytes;
-   
-   // char buf[64] = {0};
-   // read_bytes = sys_read(fd3, buf, 24);
-   // // ide_read(cur_part->my_disk, 0x6ac, buf, 1);
-   // printf("1_ read %d bytes:\n%s", read_bytes, buf);
-
-   // memset(buf, 0, 64);
-   // read_bytes = sys_read(fd3, buf, 12);
-   // printf("2_ read %d bytes:\n%s", read_bytes, buf);
-
-   // memset(buf, 0, 64);
-   // read_bytes = sys_read(fd3, buf, 6);
-   // printf("3_ read %d bytes:\n%s", read_bytes, buf);
-
-   // // printf("________  close file1 and reopen  ________\n");
-   // // sys_close(fd3);
-   // // uint32_t fd4 = sys_open("/file1", O_RDWR);
-   // printf("________ SEEK_SET 0 ________\n");
-   // memset(buf, 0, 64);
-   // sys_sleek(fd3, 0, SEEK_SET);
-   // read_bytes = sys_read(fd3, buf, 24);
-   // printf("4_ read %d bytes:\n%s", read_bytes, buf);
-
-   // sys_close(fd3);
-
-   // // sys_close(fd1);
-
-   // printf("/file1 delete %s!\n", sys_unlink("/file1") == 0 ? "done" : "fail");
-
-   // printf("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
-   printf("/dir1 create %s!\n", sys_mkdir("/dir1") == 0 ? "done" : "fail");
-   // printf("/dir1/subdir1 create %s!\n", sys_mkdir("/dir1/subdir1") == 0 ? "done" : "fail");
-   // int fd = sys_open("/dir1/subdir1/file2", O_CREATE|O_RDWR);
-   // if (fd != -1) {
-   //    printf("/dir1/subdir1/file2 create done!\n");
-   //    sys_write(fd, "Catch me if you can!\n", 21);
-   //    sys_sleek(fd, 0, SEEK_SET);
-   //    char buf[32] = {0};
-   //    sys_read(fd, buf, 21); 
-   //    printf("/dir1/subdir1/file2 says:\n%s", buf);
-   //    sys_close(fd);
-   // }
-
-   // struct dir* p_dir = sys_opendir("/dir1/subdir1");
-   // if (p_dir) {
-
-   //    printf("/dir1/subdir1 open done!\n");
-   //    if (sys_closedir(p_dir) == 0) printf("/dir1/subdir1 close done!\n");
-   //    else printf("/dir1/subdir1 close fail!\n");
-
-   // } else {
-   //    printf("/dir1/subdir1 open fail!\n");
-   // }
-
-   // struct dir* p_dir = sys_opendir("/dir1/subdir1");
-   // if (p_dir) {
-   //    printf("/dir1/subdir1 open done!\ncontent:\n");
-   //    char* type = NULL;
-   //    struct dir_entry* dir_e = NULL;
-   
-   //    while ((dir_e = sys_readdir(p_dir))) {
-   //       if (dir_e->f_type == FT_REGULAR) type = "regular";
-   //       else type = "directory";
-   //       printf("    %s  %s\n", type, dir_e->filename);
-   //    }
-
-   //    // 关闭目录
-   //    if (sys_closedir(p_dir) == 0) printf("dir1/subdir1 close done!\n");
-   //    else printf("dir1/subdir1 close failed!\n");
-   // } else {
-   //    printf("/dir1/subdir1 open failed!\n");
-   // }
-
-   // struct dir* p_dir = sys_opendir("/dir1");
-   // printf("/dir1 content before delete /dir1/subdir1:\n");
-   // char* type = NULL;
-   // struct dir_entry* dir_e = NULL;
-   // while ((dir_e = sys_readdir(p_dir))) {
-   //    if (dir_e->f_type == FT_REGULAR) type = "regular";
-   //    else type = "directory";
-   //    printf("    %s  %s\n", type, dir_e->filename);
-   // }
-
-   // // 删除/dir1/subdir1
-   // printf("try to delete nonempty directory /dir1/subdir1\n");
-   // if (sys_rmdir("/dir1/subdir1") == -1) {
-   //    printf("sys_rmdir: /dir1/subdir1 delete fail!\n");
-   // }
-   
-   // printf("try to delete /dir1/subdir1/file2\n");
-   // if (sys_rmdir("/dir1/subdir1/file2") == -1) {
-   //    printf("sys_rmdir: /dir1/subdir1/file2 delete fail!\n");
-   // } 
-
-   // if (sys_unlink("/dir1/subdir1/file2") == 0 ) {
-   //    printf("sys_unlink: /dir1/subdir1/file2 delete done\n");
-   // }
-
-   // printf("try to delete directory /dir1/subdir1 again\n");
-   // if (sys_rmdir("/dir1/subdir1") == 0) {
-   //    printf("/dir1/subdir1 delete done!\n");
-   // }
-
-   // printf("/dir1 content after delete /dir1/subdir1:\n");
-   // sys_rewinddir(p_dir);
-
-   // while((dir_e = sys_readdir(p_dir))) { 
-   //    if (dir_e->f_type == FT_REGULAR) type = "regular";
-   //    else type = "directory";
-   //    printf("    %s  %s\n", type, dir_e->filename);
-   // }
-
-   // char cwd_buf[32] = {0};
-   // sys_getcwd(cwd_buf, 32);
-   // printf("cwd: %s\n", cwd_buf);
-   // sys_chdir("/dir1/subdir1");
-   // printf("change cwd to /dir1/subdir1 now\n");
-   // sys_getcwd(cwd_buf, 32);
-   // printf("cwd: %s\n", cwd_buf);
-
-   struct stat obj_stat;
-   sys_stat("/", &obj_stat);
-   printf("/`s info\n i_no: %d\n  size: %d\n  filetype: %s\n", \
-   obj_stat.st_ino, obj_stat.st_size, \
-   obj_stat.st_filetype == 2 ? "directory" : "regular"); 
-   sys_stat("/dir1", &obj_stat);
-   printf("/dir1`s info\n i_no: %d\n  size: %d\n  filetype: %s\n", \
-   obj_stat.st_ino, obj_stat.st_size, \
-   obj_stat.st_filetype == 2 ? "directory" : "regular");
    while(1);
    return 0;
+}
+
+// init进程
+void init() {
+  
+   uint32_t ret_pid = fork();
+   if (ret_pid) {
+      printf("I am father, my pid is %d, child pid is %d\n", getpid(), ret_pid);
+       
+   } else {
+      printf("I am child, my pid is %d, ret pid is %d\n", getpid(), ret_pid);
+   }
+   while(1);
 }
 
 /* 在线程中运行的函数 */

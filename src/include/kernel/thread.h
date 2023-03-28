@@ -46,7 +46,7 @@ struct intr_stack {
     uint32_t ss;
 };
 
-//线程栈，switch_to时保存线程环境
+//线程栈，switch_to时保存线程环境，存储线程中待执行的函数
 struct thread_stack {
     uint32_t ebp;
     uint32_t ebx;
@@ -83,6 +83,8 @@ struct task_struct {
 
    uint32_t cwd_inode_nr; // 进程所在工作目录的i结点编号
 
+   pid_t parent_pid;    // 父进程的pid
+
    uint32_t stack_magic;  // 栈的边界标记，用于检测栈溢出
 };
 
@@ -100,6 +102,8 @@ void thread_block(enum task_status stat);
 void thread_unblock(struct task_struct *pthread);
 
 void thread_yield(void);
+
+pid_t fork_pid();
 
 #endif
 

@@ -40,8 +40,8 @@ struct mem_block {
 //内存块描述符
 struct mem_block_desc {
     uint32_t block_size;         // 内存块大小
-    uint32_t block_per_arena;    //一个arena能够提供的内存块个数
-    struct list free_list;       //空闲 mem_block 链表，可以由多个 arena 提供内存块
+    uint32_t block_per_arena;    // 一个arena能够提供的内存块个数
+    struct list free_list;       // 空闲 mem_block 链表，可以由多个 arena 提供内存块
 };
 
 #define DESC_CNT 7               //内存块描述符个数
@@ -66,5 +66,8 @@ void pfree(uint32_t pg_phy_addr);
 void mfree_page(enum pool_flags pf, void* _vaddr, uint32_t pg_cnt);
 
 void sys_free(void* ptr);
+
+void* get_a_page_without_opvaddrbitmap(enum pool_flags pf, uint32_t vaddr);
+
 # endif
 

@@ -1,5 +1,6 @@
 #include <user/syscall.h>
-
+#include <kernel/thread.h>
+#include <lib/kernel/stdio-kernel.h>
 
 /**
  * 无参数的系统调用 
@@ -123,3 +124,6 @@ void free(void* ptr) {
    _syscall1(SYS_FREE, ptr);
 }
 
+pid_t fork() {
+   return _syscall0(SYS_FORK);
+}

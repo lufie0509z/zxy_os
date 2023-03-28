@@ -23,6 +23,8 @@ extern void switch_to(struct task_struct* cur, struct tasK_struct* next);
 
 struct lock pid_lock;  //pid 是唯一的，分配 pid 时必须互斥
 
+extern void init();
+
 static void idle(void* arg UNUSED) {
     while (1) {
         thread_block(TASK_BLOCKED);
@@ -56,7 +58,12 @@ static pid_t allocate_pid() {
     return next_pid;
 }
 
-//初始化线程栈thread_stack
+// 分配pid，因为allocate_pid是静态的,别的文件无法调用，这里封装一下。*/
+pid_t fork_pid() {
+    return allocate_pid();
+}
+
+//初始化线程栈thread_stack（中断退出时从该栈中获取上下文环境）
 void thread_create(struct task_struct* pthread, thread_func function, void* func_arg) {
     pthread->self_kstack -= sizeof(struct intr_stack);//预留中断栈的空间
     pthread->self_kstack -= sizeof(struct thread_stack);//预留线程栈的空间
@@ -100,6 +107,8 @@ void init_thread(struct task_struct* pthread, char* name, int prio) {
     }
 
     pthread->cwd_inode_nr = 0; // 默认工作路径为根目录
+
+    pthread->parent_pid = -1;  // 默认没有父进程
 
     //self_kstack 是线程自己在内核态下使用的栈顶地址
     pthread->stack_magic = 0x20000509;
@@ -203,7 +212,12 @@ void thread_init(void) {
 
     lock_init(&pid_lock);
 
-    thread_tag = NULL;
+    put_str("aaaaa");
+    // 创建第一个用户进程，其pid是1
+    process_execute(init, "init");
+
+    // thread_tag = NULL;
+
     make_main_thread();
 
     // 创建idle线程
