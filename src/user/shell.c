@@ -5,10 +5,14 @@
 #include <user/syscall.h>
 #include <lib/stdio.h>
 #include <lib/kernel/stdint.h>
+#include <fs/fs.h>
 #include <fs/file.h>
+
 
 #define cmd_len    128  // 命令行参数的最多有128个字符
 #define MAX_ARG_NR 16   // 包括命令名最多支持的参数个数
+
+char final_path[MAX_PATH_LEN] = {0};      // 用于洗路径时的缓冲
 
 // 存储输入的命令
 static char cmd_line[cmd_len] = {0};
@@ -52,7 +56,7 @@ static void readline(char* buf, int32_t cnt) {
                     *(pos--) = 0;
                 }
                 break;
-                
+
             default:    // 非控制键
                 putchar(*pos);
                 pos++;
@@ -64,13 +68,60 @@ static void readline(char* buf, int32_t cnt) {
 
 }
 
+// 遍历字符串，将cmd_str中以token为分隔符的单词的指针存入数组argv中
+static int32_t cmd_parse(char* cmd_str, char** argv, char token) {
+    ASSERT(cmd_str != NULL);
+    int32_t arg_idx = 0;
+    while (arg_idx < MAX_ARG_NR) {
+        argv[arg_idx] = NULL;
+        arg_idx++;
+    }
+
+    char* next = cmd_str;
+    int32_t argc = 0;
+
+    while (*next) {
+        while (*next == token) next++;
+
+        if (*next == 0) break; // 最后一个参数后有空格，如‘ls dir ’
+
+        argv[argc] = next;    // 每找出一个字符串就在将它在cmd_str中的起始next存入数组中
+
+        while (*next && *next != token) next++;
+
+        // 如果cmd_str未结束，人为添加结束字符
+        if (*next) *next++ = 0;
+
+        if (argc > MAX_ARG_NR) return -1;
+
+        argc++;
+    }
+    return argc;
+}
+
+char* argv[MAX_ARG_NR];
+int32_t argc = -1;
 void my_shell() {
     cwd_cache[0] = '/';
     while (1) {
         print_prompt();
         memset(cmd_line, 0, cmd_len);
+        memset(final_path, 0, MAX_PATH_LEN);
         readline(cmd_line, cmd_len);
         if (cmd_line[0] == 0) continue; // 只敲了回车键
+        argc = -1;
+        argc = cmd_parse(cmd_line, argv, ' ');
+        printf("argc%d\n", argc);
+        if (argc == -1) {
+            printf("num of arguments exceed %d\n", MAX_ARG_NR);
+            continue;
+        }
+        int32_t arg_idx = 0;
+        while (arg_idx < argc) {
+            printf("%s ", argv[arg_idx]);
+            arg_idx++;
+        }
+        printf("\n");
     }
     PANIC("my_shell: should not be here");
 }
