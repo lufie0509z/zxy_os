@@ -3,6 +3,7 @@
 #include <kernel/string.h>
 #include <kernel/global.h>
 #include <user/syscall.h>
+#include <user/buildin_cmd.h>
 #include <lib/stdio.h>
 #include <lib/kernel/stdint.h>
 #include <fs/fs.h>
@@ -101,8 +102,10 @@ static int32_t cmd_parse(char* cmd_str, char** argv, char token) {
 
 char* argv[MAX_ARG_NR];
 int32_t argc = -1;
+
 void my_shell() {
     cwd_cache[0] = '/';
+    cwd_cache[1] = 0;
     while (1) {
         print_prompt();
         memset(cmd_line, 0, cmd_len);
@@ -111,17 +114,21 @@ void my_shell() {
         if (cmd_line[0] == 0) continue; // 只敲了回车键
         argc = -1;
         argc = cmd_parse(cmd_line, argv, ' ');
-        printf("argc%d\n", argc);
+
         if (argc == -1) {
             printf("num of arguments exceed %d\n", MAX_ARG_NR);
             continue;
         }
+        
+        char buf[MAX_PATH_LEN] = {0};
         int32_t arg_idx = 0;
         while (arg_idx < argc) {
-            printf("%s ", argv[arg_idx]);
+            make_clear_abs_path(argv[arg_idx], buf);
+            printf("%s -> %s\n", argv[arg_idx], buf);
             arg_idx++;
         }
-        printf("\n");
     }
     PANIC("my_shell: should not be here");
 }
+
+

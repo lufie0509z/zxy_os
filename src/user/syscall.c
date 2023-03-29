@@ -1,6 +1,9 @@
 #include <user/syscall.h>
 #include <kernel/thread.h>
 #include <lib/kernel/stdio-kernel.h>
+#include <fs/fs.h>
+#include <fs/dir.h>
+
 
 /**
  * 无参数的系统调用 
@@ -138,4 +141,66 @@ void putchar(char char_asci) {
 
 void clear() {
    _syscall0(SYS_CLEAR);
+}
+
+
+char* getcwd(char* buf, uint32_t size) {
+   return (char*)_syscall2(SYS_GETCWD, buf, size);
+}
+
+// 以flag方式打开文件
+int32_t open(char* pathname, uint8_t flag) {
+   return _syscall2(SYS_OPEN, pathname, flag);
+}
+
+int32_t close(int32_t fd) {
+   return _syscall1(SYS_CLOSE, fd);
+}
+
+// 设置文件偏移
+int32_t lseek(int32_t fd, int32_t offset, uint8_t whence) {
+   return _syscall3(SYS_LSEEK, fd, offset, whence);
+}
+
+// 删除文件
+int32_t unlink(const char* pathname) {
+   return _syscall1(SYS_UNLINK, pathname);
+}
+
+int32_t mkdir(const char* pathname) {
+   return _syscall1(SYS_MKDIR, pathname);
+}
+
+struct dir* opendir(const char* pathname) {
+   return (struct dir*)_syscall1(SYS_OPENDIR, pathname);
+}
+
+int32_t closedir(struct dir* dir) {
+   return _syscall1(SYS_CLOSEDIR, dir);
+}
+
+int32_t chdir(const char* pathname) {
+   return _syscall1(SYS_CHDIR, pathname);
+}
+
+int32_t rmdir(const char* pathname) {
+   return _syscall1(SYS_RMDIR, pathname);
+}
+
+struct dir_entry* readddir(struct dir* dir) {
+   return (struct dir_entry*)_syscall1(SYS_READDIR, dir);
+}
+
+// 目录回绕 将目录dir的dir_pose值置0
+void rewinddir(struct dir* dir) {
+   _syscall1(SYS_REWINDDIR, dir);
+}
+
+// 将文件的属性相关信息填入buf
+int32_t stat(const char* pathname, struct stat* buf) {
+   return _syscall2(SYS_STAT, pathname, buf);
+}
+
+void ps() {
+   return _syscall0(SYS_PS);
 }

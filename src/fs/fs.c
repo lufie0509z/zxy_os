@@ -174,7 +174,7 @@ static bool partition_mount(struct list_elem* pelem, int arg) {
 
 
 // 目录路径解析，name_store存储最上层路径，返回除最上层外的剩余子路径
-static char* path_parse(char* pathname, char* name_store) {
+char* path_parse(char* pathname, char* name_store) {
     if (pathname[0] = '/') {  // 根目录不需要单独解析
         // 跳过连续的多个'/'，如 “///a/b”
         while (*(++pathname) == '/');
@@ -424,7 +424,7 @@ int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
 
 
 // 重置文件读写操作的偏移指针，错误时返回-1
-int32_t sys_sleek(int32_t fd, int32_t offset, uint8_t whence) {
+int32_t sys_lseek(int32_t fd, int32_t offset, uint8_t whence) {
     ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
     ASSERT(whence > 0 && whence < 4);
 
