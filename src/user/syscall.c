@@ -187,7 +187,7 @@ int32_t rmdir(const char* pathname) {
    return _syscall1(SYS_RMDIR, pathname);
 }
 
-struct dir_entry* readddir(struct dir* dir) {
+struct dir_entry* readdir(struct dir* dir) {
    return (struct dir_entry*)_syscall1(SYS_READDIR, dir);
 }
 

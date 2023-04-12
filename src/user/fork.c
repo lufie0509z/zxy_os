@@ -8,6 +8,7 @@
 #include <fs/file.h>
 #include <user/process.h>
 #include <lib/kernel/stdint.h>
+#include <device/console.h>
 
 extern void intr_exit();
 
@@ -164,6 +165,27 @@ pid_t sys_fork() {
     ASSERT(INTR_OFF == intr_get_status() && parent_thread->pgdir != NULL);
 
     copy_process(child_thread, parent_thread);
+    // console_put_str("after copy");
+    // console_put_char('\n');
+    // console_put_int(child_thread->pid); console_put_char('\n');
+    // console_put_int(child_thread->parent_pid); console_put_char('\n');
+    // for (int i = 0; i < MAX_FILES_OPEN_PER_PROC; i++) {
+    //     if (parent_thread->fdtable[i] == -1) console_put_char('a');
+    //     else console_put_int(child_thread->fdtable[i]);
+    // }
+    // console_put_int(child_thread->elapsed_ticks); console_put_char('\n');
+    // console_put_int(child_thread->status); console_put_char('\n');
+
+    // console_put_str("parent");
+    // console_put_int(parent_thread->pid); console_put_char('\n');
+    // if (parent_thread->parent_pid == -1) console_put_char('a'); console_put_char('\n');
+    // for (int i = 0; i < MAX_FILES_OPEN_PER_PROC; i++) {
+    //     if (parent_thread->fdtable[i] == -1) console_put_char('a');
+    //     else console_put_int(parent_thread->fdtable[i]);
+    // }
+    // console_put_int(parent_thread->elapsed_ticks); console_put_char('\n');
+    // console_put_int(parent_thread->status); console_put_char('\n');
+    // // ASSERT(1 == 2);
 
     // 加入就绪队列和所有线程队列
     ASSERT(!elem_find(&thread_ready_list, &child_thread->general_tag));

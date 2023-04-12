@@ -820,7 +820,8 @@ int32_t sys_chdir(const char* pathname) {
 // 将文件的属性相关信息填入buf
 int32_t sys_stat(const char* path, struct stat* buf) {
     // 根目录
-    if (!strcmp(path, "/" || !strcmp(path, "/." || ! strcmp(path, "/..")))) {
+    // printk("path%s\n", path);
+    if (!strcmp(path, "/") || !strcmp(path, "/.") || ! strcmp(path, "/..")) {
         buf->st_ino = 0;
         buf->st_size = root_dir.inode->i_size;
         buf->st_filetype = FT_DIR;
@@ -834,9 +835,9 @@ int32_t sys_stat(const char* path, struct stat* buf) {
     
     if (i_no != -1) {
         struct inode* inode = inode_open(cur_part, i_no);
+        buf->st_size = inode->i_size;
         buf->st_ino = i_no;
         buf->st_filetype = searched_record.f_type;
-        buf->st_size = inode->i_size;
         inode_close(inode);
         ret = 0;
     }else printk("sys_stat: %s not found\n", path);

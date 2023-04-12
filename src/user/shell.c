@@ -13,7 +13,7 @@
 #define cmd_len    128  // 命令行参数的最多有128个字符
 #define MAX_ARG_NR 16   // 包括命令名最多支持的参数个数
 
-char final_path[MAX_PATH_LEN] = {0};      // 用于洗路径时的缓冲
+char final_path[MAX_PATH_LEN] = {0};      // 全局的，存储路径清晰转化后的结果
 
 // 存储输入的命令
 static char cmd_line[cmd_len] = {0};
@@ -105,8 +105,9 @@ int32_t argc = -1;
 
 void my_shell() {
     cwd_cache[0] = '/';
-    cwd_cache[1] = 0;
+    // cwd_cache[1] = 0;
     while (1) {
+        
         print_prompt();
         memset(cmd_line, 0, cmd_len);
         memset(final_path, 0, MAX_PATH_LEN);
@@ -118,17 +119,25 @@ void my_shell() {
         if (argc == -1) {
             printf("num of arguments exceed %d\n", MAX_ARG_NR);
             continue;
+
         }
         
-        char buf[MAX_PATH_LEN] = {0};
-        int32_t arg_idx = 0;
-        while (arg_idx < argc) {
-            make_clear_abs_path(argv[arg_idx], buf);
-            printf("%s -> %s\n", argv[arg_idx], buf);
-            arg_idx++;
-        }
+        if (!strcmp(argv[0], "ls")) {
+            buildin_ls(argc, argv);
+        } 
+        else if (!strcmp(argv[0], "cd")) {
+            
+            if (buildin_cd(argc, argv) != NULL) { // 更新当前目录
+                memset(cwd_cache, 0, MAX_PATH_LEN);
+                strcpy(cwd_cache, final_path);
+            }
+        } else if (!strcmp(argv[0], "pwd")) buildin_pwd(argc, argv);
+        else if (!strcmp(argv[0], "ps"))    buildin_ps(argc, argv);
+        else if (!strcmp(argv[0], "clear")) buildin_clear(argc, argv);
+        else if (!strcmp(argv[0], "mkdir")) buildin_mkdir(argc, argv);
+        else if (!strcmp(argv[0], "rmdir")) buildin_rmdir(argc, argv);
+        else if (!strcmp(argv[0], "rm"))    buildin_rm(argc, argv);
+        else printf("external command\n");
     }
     PANIC("my_shell: should not be here");
 }
-
-

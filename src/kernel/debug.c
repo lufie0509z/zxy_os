@@ -16,11 +16,11 @@ void panic_spin(char* filename, int line, const char* func, const char* conditio
     put_char('\n');
 
     put_str("Function: ");
-    put_str(func);
+    put_str((char*)func);
     put_char('\n');
 
     put_str("Condition: ");
-    put_str(condition);
+    put_str((char*)condition);
     put_char('\n');
 
     while (1);

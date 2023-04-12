@@ -54,7 +54,7 @@ struct  dir* opendir(const char* pathname);
 int32_t closedir(struct dir* dir);
 int32_t chdir(const char* pathname);
 int32_t rmdir(const char* pathname);
-struct  dir_entry* readddir(struct dir* dir);
+struct  dir_entry* readdir(struct dir* dir);
 void    rewinddir(struct dir* dir);
 int32_t stat(const char* pathname, struct stat* buf);
 

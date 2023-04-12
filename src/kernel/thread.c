@@ -115,6 +115,9 @@ void init_thread(struct task_struct* pthread, char* name, int prio) {
     //self_kstack 是线程自己在内核态下使用的栈顶地址
     pthread->stack_magic = 0x20000509;
 
+    put_str("init_thread");
+    put_int(pthread->pid); 
+    if (pthread->parent_pid == -1) put_str("pthread->parent_pid == -1\n");
 }
 
 //创建线程，线程执行函数function(func_arg)
@@ -270,8 +273,10 @@ static bool elem2thread_info(struct list_elem* pelem, int arg UNUSED) {
 
     char out_pad[16] = {0};
     pad_print(out_pad, 16, &pthread->pid, 'd');
-    if (&pthread->parent_pid == -1) pad_print(out_pad, 16, "NULL", 's');
+    if (pthread->parent_pid == -1) pad_print(out_pad, 16, "NULL", 's');
     else pad_print(out_pad, 16, &pthread->parent_pid, 'd');
+
+    // put_int(pthread->parent_pid);
 
     switch (pthread->status) {
         case 0:
@@ -292,7 +297,7 @@ static bool elem2thread_info(struct list_elem* pelem, int arg UNUSED) {
         case 5:
             pad_print(out_pad, 16, "DIED", 's');
     }
-
+ 
     pad_print(out_pad, 16, &pthread->elapsed_ticks, 'x');
     memset(out_pad, 0, 16);
     ASSERT(strlen(pthread->name) < 17);
@@ -332,3 +337,4 @@ void thread_init(void) {
     idle_thread = thread_start("idle", 10, idle, NULL);
     put_str("thread_init done\n");
 }
+

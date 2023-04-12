@@ -129,7 +129,10 @@ void process_execute(void* filename, char* name) {
     thread_create(thread, start_process, filename);
     thread->pgdir = create_page_dir();
     block_desc_init(thread->u_block_desc);
-
+    // put_str("process_execute  "); 
+    // put_int(thread->pid); 
+    // put_int(thread->parent_pid); 
+    // put_char('\n');
     enum intr_status old_status = intr_disable();
     ASSERT(!elem_find(&thread_all_list, &thread->all_list_tag));
     ASSERT(!elem_find(&thread_ready_list, &thread->general_tag));
@@ -138,4 +141,8 @@ void process_execute(void* filename, char* name) {
     list_append(&thread_ready_list, &thread->general_tag);
 
     intr_set_status(old_status);
+    put_str("process_execute  "); 
+    put_int(thread->pid); 
+    put_int(thread->parent_pid); 
+    put_char('\n');
 }
