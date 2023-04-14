@@ -11,6 +11,8 @@ typedef void thread_func(void*);
 typedef int16_t pid_t;
 
 #define MAX_FILES_OPEN_PER_PROC 8 // 每个进程最多打开文件的数量
+
+#define TASK_NAME_LEN 16
 //进程的状态
 enum task_status {
     TASK_RUNNING,
@@ -65,7 +67,7 @@ struct task_struct {
    uint32_t* self_kstack; // 内核线程自己的内核栈栈顶指针
    pid_t pid;
    enum task_status status;
-   char name[16];
+   char name[TASK_NAME_LEN];
    uint8_t priority;
    
    uint8_t ticks; // 嘀嗒数

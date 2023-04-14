@@ -177,14 +177,17 @@ static void* vaddr_get(enum pool_flags pf, uint32_t pg_count) {
  * 得到虚拟地址对应的PTE的指针.
  */ 
 uint32_t* pte_ptr(uint32_t vaddr) {
-    return (uint32_t*) (0xffc00000 + ((vaddr & 0xffc00000) >> 10) + (PTE_INDEX(vaddr) << 2));
+    uint32_t* pte = (uint32_t*)(0xffc00000 + \
+        ((vaddr & 0xffc00000) >> 10) + (PTE_INDEX(vaddr) * 4));
+    return pte;
 }
 
 /**
  * 得到虚拟地址对应的PDE指针.
  */ 
 uint32_t* pde_ptr(uint32_t vaddr) {
-    return (uint32_t*) ((0xfffff000) + (PDE_INDEX(vaddr) << 2));
+    uint32_t* pde = (uint32_t*) ((0xfffff000) + (PDE_INDEX(vaddr) * 4));
+    return pde;
 }
 
 /**
@@ -310,7 +313,7 @@ void* get_a_page(enum pool_flags pf, uint32_t vaddr) {
     //如果是用户进程申请用户内存，就修改用户自己的虚拟地址位图
     if (cur->pgdir != NULL && pf == PF_USER) {
         bit_idx = (vaddr - cur->userprog_vaddr.vaddr_start) / PG_SIZE;
-        ASSERT(bit_idx > 0);
+        ASSERT(bit_idx >= 0);
         bitmap_set(&cur->userprog_vaddr.vaddr_bitmap, bit_idx, 1);
     } else if (cur->pgdir == NULL && pf == PF_KERNEL) {//内核线程申请内核内
         bit_idx = (vaddr - kernel_vaddr.vaddr_start) / PG_SIZE;
@@ -609,4 +612,3 @@ void mem_init(void) {
     block_desc_init(k_block_descs);
     put_str("Init memory done.\n");
 }
-

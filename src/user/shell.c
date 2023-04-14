@@ -137,7 +137,34 @@ void my_shell() {
         else if (!strcmp(argv[0], "mkdir")) buildin_mkdir(argc, argv);
         else if (!strcmp(argv[0], "rmdir")) buildin_rmdir(argc, argv);
         else if (!strcmp(argv[0], "rm"))    buildin_rm(argc, argv);
-        else printf("external command\n");
+        else { // 执行外部命令，先 fork 出一个子进程然后调用 execv 去执行
+            pid_t pid = fork();
+            if (pid) { // 父进程
+                /* 父进程一般先于子进程执行，如果不加
+                 * 在进入下一轮循环中会将 final_path 清空
+                 * 那么子进程无法从 final_path 中获取参数 */
+                while(1); 
+            } else {
+                make_clear_abs_path(argv[0], final_path);
+                argv[0] = final_path;
+                struct stat file_stat;
+                memset(&file_stat, 0, sizeof(struct stat));
+                // 判断文件是否存在
+                if (stat(argv[0], &file_stat) == -1) {
+                    printf("my_shell: cannot access %s: No such file or directory\n", argv[0]);
+                } else execv(argv[0], argv);
+
+                while(1);
+            }
+
+            // 清空 argv 数组
+            int32_t arg_idx = 0;
+            while (arg_idx < MAX_ARG_NR) {
+                argv[arg_idx] = NULL;
+                arg_idx++;
+            }
+
+        }
     }
     PANIC("my_shell: should not be here");
 }

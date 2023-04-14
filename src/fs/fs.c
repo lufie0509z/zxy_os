@@ -400,7 +400,7 @@ int32_t sys_write(int32_t fd, const void* buf, uint32_t cnt) {
 
 
 int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
-    // ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
+    ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
     ASSERT(buf != NULL);
     int32_t ret = -1;
 
@@ -416,9 +416,11 @@ int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
         ret = bytes_read == 0 ? -1 : (int32_t)bytes_read;
     } else {
         uint32_t global_fd = fd_local_to_global(fd);
+        // printk("ret:%d cnt:%d\n", ret, cnt);
         ret = file_read(&file_table[global_fd], buf, cnt);
+        // printk("ret:%d cnt:%d\n", ret, cnt);
     }
-
+ 
     return ret;
 }
 
@@ -769,6 +771,7 @@ char* sys_getcwd(char* buf, uint32_t size) {
     if (child_i_no == 0) {
         buf[0] = '/';
         buf[1] = 0;
+        sys_free(io_buf);
         return buf;
     }
 
@@ -776,7 +779,7 @@ char* sys_getcwd(char* buf, uint32_t size) {
     char full_path_reverse[MAX_PATH_LEN] = {0}; // 反转的绝对路径
 
     // 从下往上逐层找父目录,直到找到根目录为止.
-    while ((child_i_no)) {
+    while (child_i_no) {
         parent_i_no = get_parent_dir_i_no(child_i_no, io_buf);
         if (get_child_dir_name(parent_i_no, child_i_no, full_path_reverse, io_buf) == -1) {
             sys_free(io_buf);
@@ -880,12 +883,12 @@ void filesys_init() {
                     memset(sb_buf, 0, SECTOR_SIZE);
                     ide_read(hd, p->start_lba + 1, sb_buf, 1);  // 将超级块信息读入到缓存区中
 
-                    if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
-                        printk("%s has filesystem\n", p->name);
-                    } else {                                    // 初始化文件系统
+                    // if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
+                    //     printk("%s has filesystem\n", p->name);
+                    // } else {                                    // 初始化文件系统
                         printk("formatting %s's partition%s\n", hd->name, p->name);
                         partition_format(p);
-                    }
+                    // }
 
                 }
                 partition_idx++;
@@ -910,3 +913,4 @@ void filesys_init() {
         file_table[fd_idx].fd_inode = NULL;
     }
 }
+

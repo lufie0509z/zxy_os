@@ -204,3 +204,7 @@ int32_t stat(const char* pathname, struct stat* buf) {
 void ps() {
    return _syscall0(SYS_PS);
 }
+
+int execv(const char* pathname, char** argv) {
+   return _syscall2(SYS_EXECV, pathname, argv);
+}

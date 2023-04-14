@@ -1,6 +1,7 @@
 #include <kernel/debug.h>
 #include <kernel/string.h>
 #include <user/shell.h>
+#include <user/assert.h>
 #include <user/syscall.h>
 #include <fs/fs.h>
 #include <fs/dir.h>
@@ -88,7 +89,7 @@ void buildin_ls(uint32_t argc, char** argv) {
     char* pathname = NULL;
     struct stat file_stat;
     memset(&file_stat, 0, sizeof(struct stat));
-    bool long_info = 0;
+    bool long_info = false;
     uint32_t arg_path_nr = 0;
     uint32_t arg_idx = 1;
     while (arg_idx < argc) {
@@ -155,7 +156,7 @@ void buildin_ls(uint32_t argc, char** argv) {
                 ftype = 'd';
                 if (dir_e->f_type == FT_REGULAR) ftype = '-';
                 subpath_name[pathname_len] = 0;
-                strcat(pathname, dir_e->filename);
+                strcat(subpath_name, dir_e->filename);
                 memset(&file_stat, 0, sizeof(struct stat));
                 if (stat(subpath_name, &file_stat) == -1) {
                     printf("ls: cannot access %s: No such file or directory\n", dir_e->filename);
@@ -231,4 +232,3 @@ int32_t buildin_rm(uint32_t argc, char** argv) {
     }
     return ret;
 }
-

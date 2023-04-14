@@ -4,6 +4,7 @@
 #include <device/console.h>
 #include <fs/fs.h>
 #include <user/fork.h>
+#include <user/exec.h>
 #include <user/syscall.h>
 #include <user/syscall-init.h>
 
@@ -45,6 +46,8 @@ void syscall_init() {
     syscall_table[SYS_OPENDIR]   = sys_opendir;
     syscall_table[SYS_CLOSEDIR]  = sys_closedir;
     syscall_table[SYS_REWINDDIR] = sys_rewinddir;
+ 
+    syscall_table[SYS_EXECV] = sys_execv;
     put_str("syscall_init done.\n");
 }
 

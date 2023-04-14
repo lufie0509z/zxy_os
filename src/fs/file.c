@@ -333,6 +333,8 @@ int32_t file_write(struct file* file, const void* buf, uint32_t cnt) {
             // 分配一级间接索引表
             indirect_block_table = file->fd_inode->i_sectors[12] = block_lba;
 
+            block_idx = file_has_used_blocks; 
+
             while (block_idx < file_will_use_blocks) {
                 block_lba = block_bitmap_alloc(cur_part);
                 if (block_lba == -1) {
