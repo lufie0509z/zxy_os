@@ -883,12 +883,12 @@ void filesys_init() {
                     memset(sb_buf, 0, SECTOR_SIZE);
                     ide_read(hd, p->start_lba + 1, sb_buf, 1);  // 将超级块信息读入到缓存区中
 
-                    // if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
-                    //     printk("%s has filesystem\n", p->name);
-                    // } else {                                    // 初始化文件系统
+                    if (sb_buf->magic == 0x19590318) {          // 文件系统已经初始化完成了
+                        printk("%s has filesystem\n", p->name);
+                    } else {                                    // 初始化文件系统
                         printk("formatting %s's partition%s\n", hd->name, p->name);
                         partition_format(p);
-                    // }
+                    }
 
                 }
                 partition_idx++;

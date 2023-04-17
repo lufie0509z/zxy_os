@@ -152,7 +152,9 @@ void my_shell() {
                 // 判断文件是否存在
                 if (stat(argv[0], &file_stat) == -1) {
                     printf("my_shell: cannot access %s: No such file or directory\n", argv[0]);
-                } else execv(argv[0], argv);
+                } else {
+                    execv(argv[0], argv);
+                }
 
                 while(1);
             }

@@ -27,13 +27,13 @@ static int32_t copy_pcb_vaddrbitmap_stack(struct task_struct* child_thread, \
     child_thread->all_list_tag.prev = child_thread->all_list_tag.next = NULL;
 
     // 初始化进程自己的内存块描述符，没有的话子进程内存分配时会缺页异常
-    block_desc_init(&child_thread->u_block_desc);
+    block_desc_init(child_thread->u_block_desc);
 
     // 将父进程的虚拟地址位图复制给子进程
     uint32_t bitmap_pg_cnt = DIV_ROUND_UP  \
         ((0xc0000000 - USER_VADDR_START) / PG_SIZE / 8, PG_SIZE); // 虚拟地址位图需要的页框数
     void* vaddr_bitmap = get_kernel_pages(bitmap_pg_cnt);
-    if (vaddr_bitmap == NULL) return 0;
+    if (vaddr_bitmap == NULL) return -1;
 
     /* 操作前，child_thread->userprog_vaddr.vaddr_bitmap.bits指向父进程虚拟地址的位图地址
      * 将父进程的虚拟地址位图内容复制给vaddr_bitmap
@@ -62,8 +62,9 @@ static void copy_block_stack3(struct task_struct* child_thread,  \
     // 将父进程用户空间中的数据复制到内核的页缓冲区，再复制到子进程中
     while (idx_byte < btmp_bytes_len) { // 逐字节查看位图
         if (vaddr_bitmap[idx_byte]) {   
+            idx_bit = 0;
             while (idx_bit < 8) {       // 逐位查看该字节
-                if (BITMAP_MASK << idx_bit & vaddr_bitmap[idx_byte]) {
+                if ((BITMAP_MASK << idx_bit) & vaddr_bitmap[idx_byte]) {
 
                     prog_vaddr = vaddr_start + (idx_byte * 8 + idx_bit) * PG_SIZE;
 
@@ -108,6 +109,9 @@ static int32_t build_child_statck(struct task_struct* child_thread) {
     uint32_t* ebp_ptr_in_thread_stack = (uint32_t*)intr_0_stack - 5;  
 
     *ret_addr_in_thread_stack =(uint32_t)intr_exit; // 子进程被调度后可以从中断处返回
+
+    *ebp_ptr_in_thread_stack = *ebx_ptr_in_thread_stack =\
+    *edi_ptr_in_thread_stack = *esi_ptr_in_thread_stack = 0;
 
     // 将thread_stack的栈顶记录在pcb的self_kstack，将来switch_to调度时可以用它作栈顶
     child_thread->self_kstack = ebp_ptr_in_thread_stack; 	    
@@ -164,7 +168,7 @@ pid_t sys_fork() {
 
     ASSERT(INTR_OFF == intr_get_status() && parent_thread->pgdir != NULL);
 
-    copy_process(child_thread, parent_thread);
+    if (copy_process(child_thread, parent_thread) == -1) return -1;
     // console_put_str("after copy");
     // console_put_char('\n');
     // console_put_int(child_thread->pid); console_put_char('\n');
@@ -195,3 +199,4 @@ pid_t sys_fork() {
 
     return child_thread->pid;
 }
+

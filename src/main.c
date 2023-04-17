@@ -28,8 +28,8 @@ int main(void) {
    // process_execute(u_prog_b, "u_prog_b");
    // thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
    // thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
-   
-   uint32_t file_size = 20488;
+   sys_unlink("/a");
+   uint32_t file_size = 20648;
    uint32_t sec_cnt = DIV_ROUND_UP(file_size, 512);
    struct disk* sda = &channels[0].devices[0];
    void* prog_buf = sys_malloc(file_size);

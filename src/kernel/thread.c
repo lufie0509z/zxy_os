@@ -325,7 +325,6 @@ void thread_init(void) {
 
     lock_init(&pid_lock);
 
-    put_str("aaaaa");
     // 创建第一个用户进程，其pid是1
     process_execute(init, "init");
 
