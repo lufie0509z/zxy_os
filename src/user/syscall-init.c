@@ -6,6 +6,7 @@
 #include <user/fork.h>
 #include <user/exec.h>
 #include <user/syscall.h>
+#include <user/wait_exit.h>
 #include <user/syscall-init.h>
 
 #define syscall_nr 32 // 最大支持的系统调用子功能个数
@@ -48,6 +49,9 @@ void syscall_init() {
     syscall_table[SYS_REWINDDIR] = sys_rewinddir;
  
     syscall_table[SYS_EXECV] = sys_execv;
+
+    syscall_table[SYS_WAIT]  = sys_wait;
+    syscall_table[SYS_EXIT]  = sys_exit;
     put_str("syscall_init done.\n");
 }
 

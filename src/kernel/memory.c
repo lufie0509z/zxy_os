@@ -605,6 +605,20 @@ void* get_a_page_without_opvaddrbitmap(enum pool_flags pf, uint32_t vaddr) {
     return (void*)vaddr;
 }
 
+// 根据物理页框地址将相应的内存池位图清0 但不改动页表
+void free_a_phy_page(uint32_t pg_phy_addr) {
+   struct pool* mem_pool;
+   uint32_t bit_idx = 0;
+   if (pg_phy_addr >= user_pool.phy_addr_start) {
+      mem_pool = &user_pool;
+      bit_idx = (pg_phy_addr - user_pool.phy_addr_start) / PG_SIZE;
+   } else {
+      mem_pool = &kernel_pool;
+      bit_idx = (pg_phy_addr - kernel_pool.phy_addr_start) / PG_SIZE;
+   }
+   bitmap_set(mem_pool, bit_idx, 0);
+}
+
 void mem_init(void) {
     put_str("Init memory start.\n");
     uint32_t total_memory = (*(uint32_t*) (0xb00));

@@ -2,8 +2,10 @@
 #include <kernel/debug.h>
 #include <kernel/string.h>
 #include <kernel/global.h>
+#include <user/assert.h>
 #include <user/syscall.h>
 #include <user/buildin_cmd.h>
+#include <user/wait_exit.h>
 #include <lib/stdio.h>
 #include <lib/kernel/stdint.h>
 #include <fs/fs.h>
@@ -140,10 +142,18 @@ void my_shell() {
         else { // 执行外部命令，先 fork 出一个子进程然后调用 execv 去执行
             pid_t pid = fork();
             if (pid) { // 父进程
-                /* 父进程一般先于子进程执行，如果不加
-                 * 在进入下一轮循环中会将 final_path 清空
-                 * 那么子进程无法从 final_path 中获取参数 */
-                while(1); 
+                // /* 父进程一般先于子进程执行，如果不加
+                //  * 在进入下一轮循环中会将 final_path 清空
+                //  * 那么子进程无法从 final_path 中获取参数 */
+                // while(1); 
+                int32_t status;
+                /* 阻塞父进程等到子进程 exit 后返回其状态
+                 * 如果所有子进程都还在运行，my_shell 会被阻塞 */
+                int32_t child_pid = wait(&status);  
+                if (child_pid == -1) {
+                    panic("my_shell: no child\n");
+                }
+                printf("child_pid: %d, it's status: %d\n", child_pid, status);
             } else {
                 make_clear_abs_path(argv[0], final_path);
                 argv[0] = final_path;
@@ -152,6 +162,7 @@ void my_shell() {
                 // 判断文件是否存在
                 if (stat(argv[0], &file_stat) == -1) {
                     printf("my_shell: cannot access %s: No such file or directory\n", argv[0]);
+                    exit(-1);
                 } else {
                     execv(argv[0], argv);
                 }

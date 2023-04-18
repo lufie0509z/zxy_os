@@ -3,7 +3,7 @@
 #include <lib/kernel/stdio-kernel.h>
 #include <fs/fs.h>
 #include <fs/dir.h>
-
+#include <user/wait_exit.h>
 
 /**
  * 无参数的系统调用 
@@ -207,4 +207,12 @@ void ps() {
 
 int execv(const char* pathname, char** argv) {
    return _syscall2(SYS_EXECV, pathname, argv);
+}
+
+pid_t wait(int32_t* status) {
+   return _syscall1(SYS_WAIT, status);
+}
+
+void exit(int32_t status) {
+   _syscall1(SYS_EXIT, status);
 }

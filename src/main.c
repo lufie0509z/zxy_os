@@ -28,13 +28,23 @@ int main(void) {
    // process_execute(u_prog_b, "u_prog_b");
    // thread_start("k_thread_a", 31, k_thread_a, "I am thread_a");
    // thread_start("k_thread_b", 31, k_thread_b, "I am thread_b");
-   sys_unlink("/a");
-   uint32_t file_size = 20648;
+   // uint32_t fd1 = sys_open("/file1", O_CREATE);
+  
+   // uint32_t fd2 = sys_open("/file1", O_RDWR);
+   // printf("fd1: %d  fd2: %d\n", fd1, fd2);
+   // sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
+   // sys_write(fd2, "hello,world\n", 12); // 写文件 fd2!!!
+
+   // sys_close(fd1);
+   // sys_close(fd2);
+
+   sys_unlink("/cat");
+   uint32_t file_size = 20928;
    uint32_t sec_cnt = DIV_ROUND_UP(file_size, 512);
    struct disk* sda = &channels[0].devices[0];
    void* prog_buf = sys_malloc(file_size);
    ide_read(sda, 300, prog_buf, sec_cnt);
-   int32_t fd = sys_open("/a", O_CREATE|O_RDWR);
+   int32_t fd = sys_open("/cat", O_CREATE|O_RDWR);
    
    if (fd != -1) {
       int ret = sys_write(fd, prog_buf, file_size);
@@ -46,10 +56,12 @@ int main(void) {
    }
 
 
-   cls_screen();
+   // cls_screen();
    console_put_str("[zzzzzxy@localhost /]$ ");
    
-   while(1);
+   // while(1);
+   thread_exit(running_thread(), true);
+
    return 0;
 }
 
@@ -58,8 +70,15 @@ void init() {
   
    uint32_t ret_pid = fork();
    if (ret_pid) {
+      int status;
+      int child_pid;
+      while(1) {
+         // init 线程回收僵尸线程
+         child_pid = wait(&status);
+         printf("I'm init, my pid is 1. I receive a child %d, it's status is %d.\n", child_pid, status);
+      }
       // printf("I am father, my pid is %d, child pid is %d\n", getpid(), ret_pid);
-      while(1);
+      // while(1);
        
    } else {
       // printf("I am child, my pid is %d, ret pid is %d\n", getpid(), ret_pid);

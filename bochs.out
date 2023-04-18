@@ -33,41 +33,41 @@
 00000000000i[      ]   Sound support: no
 00000000000i[      ]   USB support: UHCI
 00000000000i[      ]   VGA extension support: vbe cirrus
-00000000000i[MEM0  ] allocated memory at 0x140000000. after alignment, vector=0x140000000
+00000000000i[MEM0  ] allocated memory at 0x11c000000. after alignment, vector=0x11c000000
 00000000000i[MEM0  ] 32.00MB
 00000000000i[MEM0  ] mem block size = 0x00020000, blocks=256
 00000000000i[MEM0  ] rom at 0xfffe0000/131072 ('/opt/bochs/share/bochs/BIOS-bochs-latest')
-00000000000i[      ] lt_dlhandle is 0x600002f60600
+00000000000i[      ] lt_dlhandle is 0x6000039725e0
 00000000000i[PLUGIN] loaded plugin libbx_hdimage.so
-00000000000i[      ] lt_dlhandle is 0x600002f6c4e0
+00000000000i[      ] lt_dlhandle is 0x600003972520
 00000000000i[PLUGIN] loaded plugin libbx_pci.so
-00000000000i[      ] lt_dlhandle is 0x600002f6d260
+00000000000i[      ] lt_dlhandle is 0x6000039726a0
 00000000000i[PLUGIN] loaded plugin libbx_pci2isa.so
-00000000000i[      ] lt_dlhandle is 0x600002f6d380
+00000000000i[      ] lt_dlhandle is 0x6000039727c0
 00000000000i[PLUGIN] loaded plugin libbx_usb_uhci.so
-00000000000i[      ] lt_dlhandle is 0x600002f6d4a0
+00000000000i[      ] lt_dlhandle is 0x6000039728e0
 00000000000i[PLUGIN] loaded plugin libbx_acpi.so
-00000000000i[      ] lt_dlhandle is 0x600002f6d5c0
+00000000000i[      ] lt_dlhandle is 0x600003972a00
 00000000000i[PLUGIN] loaded plugin libbx_hpet.so
-00000000000i[      ] lt_dlhandle is 0x600002f6d6e0
+00000000000i[      ] lt_dlhandle is 0x600003972b20
 00000000000i[PLUGIN] loaded plugin libbx_cmos.so
-00000000000i[      ] lt_dlhandle is 0x600002f6d800
+00000000000i[      ] lt_dlhandle is 0x600003972c40
 00000000000i[PLUGIN] loaded plugin libbx_dma.so
-00000000000i[      ] lt_dlhandle is 0x600002f64b40
+00000000000i[      ] lt_dlhandle is 0x600003972d60
 00000000000i[PLUGIN] loaded plugin libbx_pic.so
-00000000000i[      ] lt_dlhandle is 0x600002f64d20
+00000000000i[      ] lt_dlhandle is 0x600003972e80
 00000000000i[PLUGIN] loaded plugin libbx_pit.so
-00000000000i[      ] lt_dlhandle is 0x600002f64e40
+00000000000i[      ] lt_dlhandle is 0x600003972fa0
 00000000000i[PLUGIN] loaded plugin libbx_vga.so
-00000000000i[      ] lt_dlhandle is 0x600002f64f60
+00000000000i[      ] lt_dlhandle is 0x6000039730c0
 00000000000i[PLUGIN] loaded plugin libbx_floppy.so
-00000000000i[      ] lt_dlhandle is 0x600002f65080
+00000000000i[      ] lt_dlhandle is 0x6000039731e0
 00000000000i[PLUGIN] loaded plugin libbx_ioapic.so
-00000000000i[      ] lt_dlhandle is 0x600002f651a0
+00000000000i[      ] lt_dlhandle is 0x600003973300
 00000000000i[PLUGIN] loaded plugin libbx_keyboard.so
-00000000000i[      ] lt_dlhandle is 0x600002f652c0
+00000000000i[      ] lt_dlhandle is 0x600003973420
 00000000000i[PLUGIN] loaded plugin libbx_harddrv.so
-00000000000i[      ] lt_dlhandle is 0x600002f653e0
+00000000000i[      ] lt_dlhandle is 0x600003973540
 00000000000i[PLUGIN] loaded plugin libbx_pci_ide.so
 00000000000i[PLUGIN] init_dev of 'pci' plugin device by virtual method
 00000000000i[DEV   ] i440FX PMC present at device 0, function 0
@@ -75,7 +75,7 @@
 00000000000i[DEV   ] PIIX3 PCI-to-ISA bridge present at device 1, function 0
 00000000000i[PLUGIN] init_dev of 'cmos' plugin device by virtual method
 00000000000i[CMOS  ] Using local time for initial clock
-00000000000i[CMOS  ] Setting initial clock to: Mon Apr 17 12:18:04 2023 (time0=1681705084)
+00000000000i[CMOS  ] Setting initial clock to: Tue Apr 18 18:18:06 2023 (time0=1681813086)
 00000000000i[PLUGIN] init_dev of 'dma' plugin device by virtual method
 00000000000i[DMA   ] channel 4 used by cascade
 00000000000i[PLUGIN] init_dev of 'pic' plugin device by virtual method
@@ -263,28 +263,40 @@
 00001902172i[BIOS  ] ata0-0: PCHS=121/16/63 translation=none LCHS=121/16/63
 00001956271i[BIOS  ] ata0-1: PCHS=162/16/63 translation=none LCHS=162/16/63
 00002051466i[BIOS  ] Booting from 0000:7c00
-00307832000e[SDL2  ] sdl keysym 12290 not mapped
-00315492000e[SDL2  ] sdl keysym 12290 not mapped
-00350200000e[SDL2  ] sdl keysym 12290 not mapped
-00357212000e[SDL2  ] sdl keysym 12290 not mapped
-01674163736i[      ] Ctrl-C detected in signal handler.
-01674163737i[      ] dbg: Quit
-01674163737i[CPU0  ] CPU is in protected mode (active)
-01674163737i[CPU0  ] CS.mode = 32 bit
-01674163737i[CPU0  ] SS.mode = 32 bit
-01674163737i[CPU0  ] EFER   = 0x00000000
-01674163737i[CPU0  ] | EAX=00000017  EBX=c0018280  ECX=bffffbcc  EDX=00000017
-01674163737i[CPU0  ] | ESP=bffffff0  EBP=bffffff8  ESI=00000000  EDI=bfffffc4
-01674163737i[CPU0  ] | IOPL=0 id vip vif ac vm rf nt of df IF tf SF zf af PF cf
-01674163737i[CPU0  ] | SEG sltr(index|ti|rpl)     base    limit G D
-01674163737i[CPU0  ] |  CS:002b( 0005| 0|  3) 00000000 ffffffff 1 1
-01674163737i[CPU0  ] |  DS:0033( 0006| 0|  3) 00000000 ffffffff 1 1
-01674163737i[CPU0  ] |  SS:0033( 0006| 0|  3) 00000000 ffffffff 1 1
-01674163737i[CPU0  ] |  ES:0033( 0006| 0|  3) 00000000 ffffffff 1 1
-01674163737i[CPU0  ] |  FS:0033( 0006| 0|  3) 00000000 ffffffff 1 1
-01674163737i[CPU0  ] |  GS:0000( 0000| 0|  0) 00000000 00000000 0 0
-01674163737i[CPU0  ] | EIP=08049021 (08049021)
-01674163737i[CPU0  ] | CR0=0xe0000011 CR2=0x00000000
-01674163737i[CPU0  ] | CR3=0x00274000 CR4=0x00000000
-01674163737i[CMOS  ] Last time is 1681705502 (Mon Apr 17 12:25:02 2023)
-01674163737i[SIM   ] quit_sim called with exit code 0
+01008152000e[SDL2  ] sdl keysym 12290 not mapped
+01077164000e[SDL2  ] sdl keysym 12290 not mapped
+01280908000e[SDL2  ] sdl keysym 12290 not mapped
+01347804000e[SDL2  ] sdl keysym 12290 not mapped
+07424604000e[SDL2  ] sdl keysym 12290 not mapped
+07474888000e[SDL2  ] sdl keysym 12290 not mapped
+07660792000e[SDL2  ] sdl keysym 12290 not mapped
+07721840000e[SDL2  ] sdl keysym 12290 not mapped
+11382912000e[SDL2  ] sdl keysym 12290 not mapped
+11440256000e[SDL2  ] sdl keysym 12290 not mapped
+11578640000e[SDL2  ] sdl keysym 12290 not mapped
+11650768000e[SDL2  ] sdl keysym 12290 not mapped
+11809400000e[SDL2  ] sdl keysym 12290 not mapped
+11892332000e[SDL2  ] sdl keysym 12290 not mapped
+12013344000e[SDL2  ] sdl keysym 12290 not mapped
+12083644000e[SDL2  ] sdl keysym 12290 not mapped
+21612312321i[      ] Ctrl-C detected in signal handler.
+21612312322i[      ] dbg: Quit
+21612312322i[CPU0  ] CPU is in protected mode (active)
+21612312322i[CPU0  ] CS.mode = 32 bit
+21612312322i[CPU0  ] SS.mode = 32 bit
+21612312322i[CPU0  ] EFER   = 0x00000000
+21612312322i[CPU0  ] | EAX=c0018194  EBX=00000000  ECX=c00196a0  EDX=c0119044
+21612312322i[CPU0  ] | ESP=c0119d48  EBP=00000000  ESI=00000000  EDI=00000000
+21612312322i[CPU0  ] | IOPL=0 id vip vif ac vm rf nt of df if tf SF zf AF PF cf
+21612312322i[CPU0  ] | SEG sltr(index|ti|rpl)     base    limit G D
+21612312322i[CPU0  ] |  CS:0008( 0001| 0|  0) 00000000 ffffffff 1 1
+21612312322i[CPU0  ] |  DS:0033( 0006| 0|  3) 00000000 ffffffff 1 1
+21612312322i[CPU0  ] |  SS:0010( 0002| 0|  0) 00000000 ffffffff 1 1
+21612312322i[CPU0  ] |  ES:0033( 0006| 0|  3) 00000000 ffffffff 1 1
+21612312322i[CPU0  ] |  FS:0033( 0006| 0|  3) 00000000 ffffffff 1 1
+21612312322i[CPU0  ] |  GS:0000( 0000| 0|  0) 00000000 00000000 0 0
+21612312322i[CPU0  ] | EIP=c0001df3 (c0001df3)
+21612312322i[CPU0  ] | CR0=0xe0000011 CR2=0x00000000
+21612312322i[CPU0  ] | CR3=0x00100000 CR4=0x00000000
+21612312322i[CMOS  ] Last time is 1681818489 (Tue Apr 18 19:48:09 2023)
+21612312322i[SIM   ] quit_sim called with exit code 0
