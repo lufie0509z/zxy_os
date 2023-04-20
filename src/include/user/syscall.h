@@ -32,7 +32,8 @@ enum SYSCALL_NR {
     SYS_EXECV,
     SYS_WAIT,
     SYS_EXIT,
-    SYS_PIPE
+    SYS_PIPE,
+    SYS_FD_REDIRECT
 };
 
 uint32_t getpid(void);
@@ -70,4 +71,6 @@ pid_t wait(int32_t* status);
 void  exit(int32_t status);
 
 int32_t pipe(int32_t pipe_fd[2]);
+
+void fd_redirect(uint32_t old_local_fd, uint32_t new_local_fd);
 #endif

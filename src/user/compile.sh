@@ -12,7 +12,7 @@ fi
 
 
 
-BIN="prog_pipe"
+BIN="cat"
 CFLAGS="-Wall -fno-pie -c -fno-stack-protector -nostdinc -fno-builtin -W \
        -fomit-frame-pointer -Wstrict-prototypes -Wmissing-prototypes -Wsystem-headers -m32"
 LIB="../include/"

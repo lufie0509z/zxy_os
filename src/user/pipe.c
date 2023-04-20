@@ -73,3 +73,14 @@ uint32_t pipe_write(int32_t local_fd, const void* buf, uint32_t cnt) {
     return bytes_write;
 }
 
+// 文件描述符重定向
+void sys_fd_redirect(uint32_t old_local_fd, uint32_t new_local_fd) {
+    struct task_struct* cur = running_thread();
+    if (new_local_fd < 3) { // 预留的标准输入输出和错误的
+        cur->fdtable[old_local_fd] = new_local_fd; 
+    } 
+    else {
+        uint32_t new_global_fd = cur->fdtable[new_local_fd];
+        cur->fdtable[old_local_fd] = new_global_fd;
+    }
+}

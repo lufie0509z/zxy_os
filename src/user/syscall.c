@@ -220,3 +220,7 @@ void exit(int32_t status) {
 int32_t pipe(int32_t pipe_fd[2]) {
    return _syscall1(SYS_PIPE, pipe_fd);
 }
+
+void fd_redirect(uint32_t old_local_fd, uint32_t new_local_fd) {
+   _syscall2(SYS_FD_REDIRECT, old_local_fd, new_local_fd);
+}
