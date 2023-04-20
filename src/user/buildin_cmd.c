@@ -232,3 +232,8 @@ int32_t buildin_rm(uint32_t argc, char** argv) {
     }
     return ret;
 }
+
+
+void buildin_help(uint32_t argc, char** argv) {
+    help();
+}

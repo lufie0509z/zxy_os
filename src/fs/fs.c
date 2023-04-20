@@ -885,6 +885,24 @@ void sys_putchar(char char_asci) {
    console_put_char(char_asci);
 }
 
+
+void sys_help(void) {
+   printk("\
+    buildin commands:\n\
+        ls: show directory or file information\n\
+        cd: change current work directory\n\
+        mkdir: create a directory\n\
+        rmdir: remove a empty directory\n\
+        rm: remove a regular file\n\
+        pwd: show current work directory\n\
+        ps: show process information\n\
+        clear: clear screen\n\
+    shortcut key:\n\
+        ctrl+l: clear screen\n\
+        ctrl+u: clear input\n\n");
+}
+
+
 // 文件系统初始化，如果没有就对分区进行格式化并创建文件系统
 void filesys_init() {
     uint8_t channel_no = 0, dev_no = 0, partition_idx = 0;

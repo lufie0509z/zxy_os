@@ -55,7 +55,10 @@ void syscall_init() {
     syscall_table[SYS_EXIT]  = sys_exit;
     syscall_table[SYS_PIPE]  = sys_pipe;
 
+    syscall_table[SYS_HELP]  = sys_help;
+
     syscall_table[SYS_FD_REDIRECT] = sys_fd_redirect;
+
     put_str("syscall_init done.\n");
 }
 

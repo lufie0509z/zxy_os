@@ -119,6 +119,7 @@ static void cmd_execute(uint32_t argc, char** argv) {
     else if (!strcmp(argv[0], "mkdir")) buildin_mkdir(argc, argv);
     else if (!strcmp(argv[0], "rmdir")) buildin_rmdir(argc, argv);
     else if (!strcmp(argv[0], "rm"))    buildin_rm(argc, argv);
+    else if (!strcmp(argv[0], "help"))  buildin_help(argc, argv);
     else { // 执行外部命令，先 fork 出一个子进程然后调用 execv 去执行
         pid_t pid = fork();
         if (pid) { // 父进程
