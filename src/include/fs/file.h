@@ -6,11 +6,13 @@
 
 #define MAX_FILES_OPEN 32 // 系统可打开的最大文件次数，因为一个文件可以多次打开
 
+
+
 // 文件结构
 struct file {
-    uint32_t fd_pos;  // 文件操作在文件内的偏移量
-    uint32_t fd_flag; // 文件操作标识符
-    struct inode* fd_inode;
+    uint32_t fd_pos;  // 文件操作在文件内的偏移量 管道：打开数
+    uint32_t fd_flag; // 文件操作标识符 管道：PIPE_FLAG 0xFFFF
+    struct inode* fd_inode;  // 管道：管道的内存缓冲区
 };
 
 // 标准输入输出描述符

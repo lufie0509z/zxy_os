@@ -216,3 +216,7 @@ pid_t wait(int32_t* status) {
 void exit(int32_t status) {
    _syscall1(SYS_EXIT, status);
 }
+
+int32_t pipe(int32_t pipe_fd[2]) {
+   return _syscall1(SYS_PIPE, pipe_fd);
+}

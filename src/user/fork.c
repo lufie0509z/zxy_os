@@ -6,6 +6,7 @@
 #include <kernel/memory.h>
 #include <kernel/interrupt.h>
 #include <fs/file.h>
+#include <user/pipe.h>
 #include <user/process.h>
 #include <lib/kernel/stdint.h>
 #include <device/console.h>
@@ -125,8 +126,16 @@ static void update_inode_open_cnts(struct task_struct* thread) {
     while (local_fd < MAX_FILES_OPEN_PER_PROC) {
         global_fd = thread->fdtable[local_fd];
         ASSERT(global_fd < MAX_FILES_OPEN);
-        if (global_fd != -1) file_table[global_fd].fd_inode->i_open_cnt++;
+        if (global_fd != -1) {
+            if (is_pipe(local_fd)) {
+                // 如果是管道 fd_pos 被复用为管道的打开次数
+                file_table[global_fd].fd_pos++;
+            } else {
+                file_table[global_fd].fd_inode->i_open_cnt++;
+            }
+        }
         local_fd++;
+
     }
 }
 

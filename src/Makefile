@@ -5,7 +5,7 @@ AR = ar
 OBJECTS = start.o main.o init.o interrupt.o print.o  kernel.o timer.o debug.o string.o bitmap.o   \
           memory.o thread.o list.o switch.o console.o sync.o keyboard.o ioqueue.o tss.o process.o \
 		  syscall.o syscall-init.o stdio.o stdio-kernel.o ide.o dir.o inode.o file.o fs.o fork.o  \
-		  shell.o buildin_cmd.o exec.o assert.o wait_exit.o
+		  shell.o buildin_cmd.o exec.o assert.o wait_exit.o pipe.o
 
 CFLAGS = -Wall -fno-pie -O0 -g -fstrength-reduce -fomit-frame-pointer \
 		 -finline-functions -nostdinc -fno-builtin  -fno-stack-protector -m32
@@ -51,6 +51,7 @@ all: kernel.bin kernel.elf libkernel.a
 	gcc $(CFLAGS) -I./include -c -o exec.o              user/exec.c
 	gcc $(CFLAGS) -I./include -c -o assert.o            user/assert.c
 	gcc $(CFLAGS) -I./include -c -o wait_exit.o         user/wait_exit.c
+	gcc $(CFLAGS) -I./include -c -o pipe.o              user/pipe.c
 
 libkernel.a: $(OBJECTS)
 	$(AR) -r libkernel.a $(OBJECTS)

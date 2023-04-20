@@ -48,6 +48,8 @@ struct stat {
 void filesys_init();
 int32_t path_depth_cnt (char* pathname);
 
+uint32_t fd_local_to_global(uint32_t local_fd);
+
 char* path_parse(char* pathname, char* name_store);
 
 int32_t sys_open(const char* fpathname, uint8_t flags);

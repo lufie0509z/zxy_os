@@ -38,13 +38,13 @@ int main(void) {
    // sys_close(fd1);
    // sys_close(fd2);
 
-   sys_unlink("/cat");
-   uint32_t file_size = 20928;
+   sys_unlink("/prog_pipe");
+   uint32_t file_size = 21072;
    uint32_t sec_cnt = DIV_ROUND_UP(file_size, 512);
    struct disk* sda = &channels[0].devices[0];
    void* prog_buf = sys_malloc(file_size);
    ide_read(sda, 300, prog_buf, sec_cnt);
-   int32_t fd = sys_open("/cat", O_CREATE|O_RDWR);
+   int32_t fd = sys_open("/prog_pipe", O_CREATE|O_RDWR);
    
    if (fd != -1) {
       int ret = sys_write(fd, prog_buf, file_size);
@@ -56,7 +56,7 @@ int main(void) {
    }
 
 
-   // cls_screen();
+   cls_screen();
    console_put_str("[zzzzzxy@localhost /]$ ");
    
    // while(1);

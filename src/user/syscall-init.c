@@ -5,6 +5,7 @@
 #include <fs/fs.h>
 #include <user/fork.h>
 #include <user/exec.h>
+#include <user/pipe.h>
 #include <user/syscall.h>
 #include <user/wait_exit.h>
 #include <user/syscall-init.h>
@@ -52,6 +53,7 @@ void syscall_init() {
 
     syscall_table[SYS_WAIT]  = sys_wait;
     syscall_table[SYS_EXIT]  = sys_exit;
+    syscall_table[SYS_PIPE]  = sys_pipe;
     put_str("syscall_init done.\n");
 }
 

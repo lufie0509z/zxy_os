@@ -4,7 +4,7 @@
 #include <kernel/sync.h>
 #include <kernel/thread.h>
 
-#define bufsize 64
+#define bufsize 2048
 
 struct ioqueue
 {
@@ -22,6 +22,8 @@ bool ioq_empty(struct ioqueue* ioq);
 bool ioq_full(struct ioqueue* ioq);
 char ioq_get_char(struct ioqueue* ioq);
 void ioq_put_char(struct ioqueue* ioq, char ch);
+
+uint32_t ioq_length(struct ioqueue* ioq);
 
 #endif
 

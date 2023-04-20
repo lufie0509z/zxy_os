@@ -3,6 +3,7 @@
 #include <fs/file.h>
 #include <fs/inode.h>
 #include <fs/super_block.h>
+#include <user/pipe.h>
 #include <device/ide.h>
 #include <device/console.h>
 #include <device/ioqueue.h>
@@ -356,7 +357,7 @@ int32_t sys_open(const char* pathname, uint8_t flags) {
 }
 
 // 输入pcb中的文件描述符， 返回全局文件表的下标
-static uint32_t fd_local_to_global(uint32_t local_fd) {
+uint32_t fd_local_to_global(uint32_t local_fd) {
    struct task_struct* cur = running_thread();
    int32_t global_fd = cur->fdtable[local_fd];
 //    printk("fd_local_to_global %d %d\n", local_fd, global_fd);
@@ -370,58 +371,90 @@ int32_t sys_close(int32_t fd) {
    int32_t ret = -1; // 默认关闭失败
    if (fd > 2) {
       uint32_t global_fd = fd_local_to_global(fd);
-      ret = file_close(&file_table[global_fd]);
+      if (is_pipe(fd)) { // 如果是管道
+         file_table[global_fd].fd_pos--;
+         if (file_table[global_fd].fd_pos == 0) {
+            // 如果该管道上的描述符都被关闭了那就释放管道的环形缓冲区
+            mfree_page(PF_KERNEL, file_table[global_fd].fd_inode, 1);
+            file_table[global_fd].fd_inode = NULL;
+         }
+         ret = 0;
+      } else {
+         ret = file_close(&file_table[global_fd]);
+      }
+
       running_thread()->fdtable[fd] = -1;  // 使该文件描述符位可用
-      printk("fd: %d is closing\n", fd);
+      // printk("fd: %d is closing\n", fd);
    }
    return ret;
 }
 
 // 往文件描述符所在文件写入cnt个字节
 int32_t sys_write(int32_t fd, const void* buf, uint32_t cnt) {
-    if (fd == std_out) { // 标准输出
-        char tmp[1024] = {0};
-        memcpy(tmp, buf, cnt);
-        console_put_str(tmp);
-        return cnt;
-    }
+   if (fd < 0) {
+      printk("sys_write: fd error\n");
+      return -1;
+   }
 
-    uint32_t global_fd = fd_local_to_global(fd); // 文件表中的下标
+   if (fd == std_out) { // 标准输出
+      if (is_pipe(fd)) { // 标准输出被重定向为管道缓冲区
+         return pipe_write(fd, buf, cnt);
+      } else {
+         char tmp[1024] = {0};
+         memcpy(tmp, buf, cnt);
+         console_put_str(tmp);
+         return cnt;
+      }
+   } else if (is_pipe(fd)) {
 
-    struct file* f = &file_table[global_fd];
+      return pipe_write(fd, buf, cnt);
+   } else {
+      uint32_t global_fd = fd_local_to_global(fd); // 文件表中的下标
 
-    if (f->fd_flag & O_WRONLY || f->fd_flag & O_RDWR) {
-        return file_write(f, buf, cnt);
-    } else {
-        console_put_str("sys_write: not allowed to write file without flag O_RDWR or O_WRONLY\n");
-        return -1;
-    }
+      struct file* f = &file_table[global_fd];
+
+      if (f->fd_flag & O_WRONLY || f->fd_flag & O_RDWR) {
+         return file_write(f, buf, cnt);
+      } else {
+         console_put_str("sys_write: not allowed to write file without flag O_RDWR or O_WRONLY\n");
+         return -1;
+      }
+   }
+
 }
 
 
 int32_t sys_read(int32_t fd, void* buf, uint32_t cnt) {
-    ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
-    ASSERT(buf != NULL);
-    int32_t ret = -1;
+   ASSERT(fd >= 0 && fd < MAX_FILES_OPEN_PER_PROC);
+   ASSERT(buf != NULL);
+   int32_t ret = -1;
 
-    if (fd < 0 || fd == std_out || fd == std_err) printk("sys_read:fd error\n");
-    else if (fd == stdin_no) { // 从键盘获取输入
-        char* buffer = buf;
-        uint32_t bytes_read = 0;
-        while (bytes_read < cnt) {
+   if (fd < 0 || fd == std_out || fd == std_err) printk("sys_read:fd error\n");
+   else if (fd == stdin_no) { // 从键盘获取输入
+      if (is_pipe(fd)) {
+         return pipe_read(fd, buf, cnt);
+      } else {
+         char* buffer = buf;
+         uint32_t bytes_read = 0;
+         while (bytes_read < cnt) {
             *buffer = ioq_get_char(&kbd_buf);
             bytes_read++;
             buffer++;
-        }
-        ret = bytes_read == 0 ? -1 : (int32_t)bytes_read;
-    } else {
-        uint32_t global_fd = fd_local_to_global(fd);
-        // printk("ret:%d cnt:%d\n", ret, cnt);
-        ret = file_read(&file_table[global_fd], buf, cnt);
-        // printk("ret:%d cnt:%d\n", ret, cnt);
-    }
- 
-    return ret;
+         }
+         ret = bytes_read == 0 ? -1 : (int32_t)bytes_read;
+      }
+      
+   } else if (is_pipe(fd)){
+
+      return pipe_read(fd, buf, cnt);
+   } else {
+      uint32_t global_fd = fd_local_to_global(fd);
+      // printk("ret:%d cnt:%d\n", ret, cnt);
+      ret = file_read(&file_table[global_fd], buf, cnt);
+      // printk("ret:%d cnt:%d\n", ret, cnt);
+   }
+
+   return ret;
 }
 
 

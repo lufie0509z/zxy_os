@@ -7,6 +7,8 @@
 #include <lib/stdio.h>
 #include <lib/kernel/stdint.h>
 #include <fs/fs.h>
+#include <fs/file.h>
+#include <user/pipe.h>
 
 /* 回收用户进程的资源：
  * 页表中对应的物理页
@@ -59,7 +61,16 @@ static void release_prog_resource(struct task_struct* release_thread) {
     uint32_t fd_idx = 3;
     while (fd_idx < MAX_FILES_OPEN_PER_PROC) {
         if (release_thread->fdtable[fd_idx] != -1) {
-            sys_close(fd_idx);
+            if (is_pipe(fd_idx)) { // 管道
+                uint32_t global_fd = fd_local_to_global(fd_idx);
+                file_table[global_fd].fd_pos--;
+                if (file_table[global_fd].fd_pos == 0) {
+                    mfree_page(PF_KERNEL, file_table[global_fd].fd_inode, 1);
+                    file_table[global_fd].fd_inode = NULL;
+                }
+            } else {
+                sys_close(fd_idx);
+            }
         }
         fd_idx++;
     }
